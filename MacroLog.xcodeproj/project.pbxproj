@@ -1,0 +1,519 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		000000000000000000000027 /* MacroLogApp.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000B /* MacroLogApp.swift */; };
+		000000000000000000000028 /* Theme.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000C /* Theme.swift */; };
+		000000000000000000000029 /* EntryStatus.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000D /* EntryStatus.swift */; };
+		00000000000000000000002A /* FoodEntry.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000E /* FoodEntry.swift */; };
+		00000000000000000000002B /* MacroEstimate.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000F /* MacroEstimate.swift */; };
+		00000000000000000000002C /* AnthropicClient.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000010 /* AnthropicClient.swift */; };
+		00000000000000000000002D /* EntryStore.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000011 /* EntryStore.swift */; };
+		00000000000000000000002E /* EstimationError.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000012 /* EstimationError.swift */; };
+		00000000000000000000002F /* EstimationPrompt.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000013 /* EstimationPrompt.swift */; };
+		000000000000000000000030 /* EstimationService.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000014 /* EstimationService.swift */; };
+		000000000000000000000031 /* HealthKitService.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000015 /* HealthKitService.swift */; };
+		000000000000000000000032 /* ImageProcessing.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000016 /* ImageProcessing.swift */; };
+		000000000000000000000033 /* Secrets.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000017 /* Secrets.swift */; };
+		000000000000000000000034 /* CaptureViewModel.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000018 /* CaptureViewModel.swift */; };
+		000000000000000000000035 /* CameraController.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000019 /* CameraController.swift */; };
+		000000000000000000000036 /* CameraPreview.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001A /* CameraPreview.swift */; };
+		000000000000000000000037 /* CaptureView.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001B /* CaptureView.swift */; };
+		000000000000000000000038 /* ReviewView.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001C /* ReviewView.swift */; };
+		000000000000000000000039 /* RootView.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001D /* RootView.swift */; };
+		00000000000000000000003A /* TextEntrySheet.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001E /* TextEntrySheet.swift */; };
+		00000000000000000000003B /* TodayListView.swift */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001F /* TodayListView.swift */; };
+		00000000000000000000003C /* MacroRing.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000020 /* MacroRing.swift */; };
+		00000000000000000000003D /* UnsupportedDeviceView.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000021 /* UnsupportedDeviceView.swift */; };
+		00000000000000000000003E /* Macros.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* Macros.swift */; };
+		00000000000000000000003F /* SharedConstants.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000023 /* SharedConstants.swift */; };
+		000000000000000000000040 /* TodaySnapshot.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* TodaySnapshot.swift */; };
+		000000000000000000000041 /* Assets.xcassets */ = {isa = PBXBuildFile; fileRef = 000000000000000000000003 /* Assets.xcassets */; };
+		000000000000000000000042 /* MacroLogWidgetBundle.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000025 /* MacroLogWidgetBundle.swift */; };
+		000000000000000000000043 /* TodayWidget.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000026 /* TodayWidget.swift */; };
+		000000000000000000000044 /* Macros.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* Macros.swift */; };
+		000000000000000000000045 /* SharedConstants.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000023 /* SharedConstants.swift */; };
+		000000000000000000000046 /* TodaySnapshot.swift */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* TodaySnapshot.swift */; };
+		000000000000000000000047 /* Assets.xcassets */ = {isa = PBXBuildFile; fileRef = 000000000000000000000004 /* Assets.xcassets */; };
+		000000000000000000000048 /* MacroLogWidget.appex */ = {isa = PBXBuildFile; fileRef = 000000000000000000000002 /* MacroLogWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		00000000000000000000005C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 00000000000000000000004B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 00000000000000000000004A;
+			remoteInfo = MacroLogWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		00000000000000000000004F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				000000000000000000000048 /* MacroLogWidget.appex */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		000000000000000000000001 /* MacroLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacroLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000002 /* MacroLogWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MacroLogWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		00000000000000000000000B /* MacroLogApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "MacroLogApp.swift"; path = "App/MacroLogApp.swift"; sourceTree = "<group>"; };
+		00000000000000000000000C /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Theme.swift"; path = "Design/Theme.swift"; sourceTree = "<group>"; };
+		00000000000000000000000D /* EntryStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "EntryStatus.swift"; path = "Models/EntryStatus.swift"; sourceTree = "<group>"; };
+		00000000000000000000000E /* FoodEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "FoodEntry.swift"; path = "Models/FoodEntry.swift"; sourceTree = "<group>"; };
+		00000000000000000000000F /* MacroEstimate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "MacroEstimate.swift"; path = "Models/MacroEstimate.swift"; sourceTree = "<group>"; };
+		000000000000000000000010 /* AnthropicClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AnthropicClient.swift"; path = "Services/AnthropicClient.swift"; sourceTree = "<group>"; };
+		000000000000000000000011 /* EntryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "EntryStore.swift"; path = "Services/EntryStore.swift"; sourceTree = "<group>"; };
+		000000000000000000000012 /* EstimationError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "EstimationError.swift"; path = "Services/EstimationError.swift"; sourceTree = "<group>"; };
+		000000000000000000000013 /* EstimationPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "EstimationPrompt.swift"; path = "Services/EstimationPrompt.swift"; sourceTree = "<group>"; };
+		000000000000000000000014 /* EstimationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "EstimationService.swift"; path = "Services/EstimationService.swift"; sourceTree = "<group>"; };
+		000000000000000000000015 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "HealthKitService.swift"; path = "Services/HealthKitService.swift"; sourceTree = "<group>"; };
+		000000000000000000000016 /* ImageProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ImageProcessing.swift"; path = "Services/ImageProcessing.swift"; sourceTree = "<group>"; };
+		000000000000000000000017 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Secrets.swift"; path = "Services/Secrets.swift"; sourceTree = "<group>"; };
+		000000000000000000000018 /* CaptureViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CaptureViewModel.swift"; path = "ViewModels/CaptureViewModel.swift"; sourceTree = "<group>"; };
+		000000000000000000000019 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CameraController.swift"; path = "Views/CameraController.swift"; sourceTree = "<group>"; };
+		00000000000000000000001A /* CameraPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CameraPreview.swift"; path = "Views/CameraPreview.swift"; sourceTree = "<group>"; };
+		00000000000000000000001B /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CaptureView.swift"; path = "Views/CaptureView.swift"; sourceTree = "<group>"; };
+		00000000000000000000001C /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ReviewView.swift"; path = "Views/ReviewView.swift"; sourceTree = "<group>"; };
+		00000000000000000000001D /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "RootView.swift"; path = "Views/RootView.swift"; sourceTree = "<group>"; };
+		00000000000000000000001E /* TextEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TextEntrySheet.swift"; path = "Views/TextEntrySheet.swift"; sourceTree = "<group>"; };
+		00000000000000000000001F /* TodayListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TodayListView.swift"; path = "Views/TodayListView.swift"; sourceTree = "<group>"; };
+		000000000000000000000020 /* MacroRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "MacroRing.swift"; path = "Views/Components/MacroRing.swift"; sourceTree = "<group>"; };
+		000000000000000000000021 /* UnsupportedDeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "UnsupportedDeviceView.swift"; path = "Views/Components/UnsupportedDeviceView.swift"; sourceTree = "<group>"; };
+		000000000000000000000003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = "Assets.xcassets"; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		000000000000000000000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info.plist"; path = "Resources/Info.plist"; sourceTree = "<group>"; };
+		000000000000000000000006 /* MacroLog.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = "MacroLog.entitlements"; path = "Resources/MacroLog.entitlements"; sourceTree = "<group>"; };
+		000000000000000000000009 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Secrets.xcconfig"; path = "Config/Secrets.xcconfig"; sourceTree = "<group>"; };
+		00000000000000000000000A /* Secrets.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Secrets.example.xcconfig"; path = "Config/Secrets.example.xcconfig"; sourceTree = "<group>"; };
+		000000000000000000000022 /* Macros.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Macros.swift"; path = "Macros.swift"; sourceTree = "<group>"; };
+		000000000000000000000023 /* SharedConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "SharedConstants.swift"; path = "SharedConstants.swift"; sourceTree = "<group>"; };
+		000000000000000000000024 /* TodaySnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TodaySnapshot.swift"; path = "TodaySnapshot.swift"; sourceTree = "<group>"; };
+		000000000000000000000025 /* MacroLogWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "MacroLogWidgetBundle.swift"; path = "MacroLogWidgetBundle.swift"; sourceTree = "<group>"; };
+		000000000000000000000026 /* TodayWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TodayWidget.swift"; path = "TodayWidget.swift"; sourceTree = "<group>"; };
+		000000000000000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = "Assets.xcassets"; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		000000000000000000000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info.plist"; path = "Info.plist"; sourceTree = "<group>"; };
+		000000000000000000000008 /* MacroLogWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = "MacroLogWidget.entitlements"; path = "MacroLogWidget.entitlements"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		00000000000000000000004D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000051 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		00000000000000000000005E = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000060,
+				000000000000000000000061,
+				000000000000000000000062,
+				00000000000000000000005F,
+			);
+			sourceTree = "<group>";
+		};
+		00000000000000000000005F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000001 /* MacroLog.app */,
+				000000000000000000000002 /* MacroLogWidget.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		000000000000000000000060 /* MacroLog */ = {
+			isa = PBXGroup;
+			children = (
+				00000000000000000000000B /* MacroLogApp.swift */,
+				00000000000000000000000C /* Theme.swift */,
+				00000000000000000000000D /* EntryStatus.swift */,
+				00000000000000000000000E /* FoodEntry.swift */,
+				00000000000000000000000F /* MacroEstimate.swift */,
+				000000000000000000000010 /* AnthropicClient.swift */,
+				000000000000000000000011 /* EntryStore.swift */,
+				000000000000000000000012 /* EstimationError.swift */,
+				000000000000000000000013 /* EstimationPrompt.swift */,
+				000000000000000000000014 /* EstimationService.swift */,
+				000000000000000000000015 /* HealthKitService.swift */,
+				000000000000000000000016 /* ImageProcessing.swift */,
+				000000000000000000000017 /* Secrets.swift */,
+				000000000000000000000018 /* CaptureViewModel.swift */,
+				000000000000000000000019 /* CameraController.swift */,
+				00000000000000000000001A /* CameraPreview.swift */,
+				00000000000000000000001B /* CaptureView.swift */,
+				00000000000000000000001C /* ReviewView.swift */,
+				00000000000000000000001D /* RootView.swift */,
+				00000000000000000000001E /* TextEntrySheet.swift */,
+				00000000000000000000001F /* TodayListView.swift */,
+				000000000000000000000020 /* MacroRing.swift */,
+				000000000000000000000021 /* UnsupportedDeviceView.swift */,
+				000000000000000000000003 /* Assets.xcassets */,
+				000000000000000000000005 /* Info.plist */,
+				000000000000000000000006 /* MacroLog.entitlements */,
+				000000000000000000000009 /* Secrets.xcconfig */,
+				00000000000000000000000A /* Secrets.example.xcconfig */,
+			);
+			path = MacroLog;
+			sourceTree = "<group>";
+		};
+		000000000000000000000061 /* MacroLogShared */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000022 /* Macros.swift */,
+				000000000000000000000023 /* SharedConstants.swift */,
+				000000000000000000000024 /* TodaySnapshot.swift */,
+			);
+			path = MacroLogShared;
+			sourceTree = "<group>";
+		};
+		000000000000000000000062 /* MacroLogWidget */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000025 /* MacroLogWidgetBundle.swift */,
+				000000000000000000000026 /* TodayWidget.swift */,
+				000000000000000000000004 /* Assets.xcassets */,
+				000000000000000000000007 /* Info.plist */,
+				000000000000000000000008 /* MacroLogWidget.entitlements */,
+			);
+			path = MacroLogWidget;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		000000000000000000000049 /* MacroLog */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 000000000000000000000054;
+			buildPhases = (
+				00000000000000000000004C,
+				00000000000000000000004D,
+				00000000000000000000004E,
+				00000000000000000000004F,
+			);
+			buildRules = ();
+			dependencies = (
+				00000000000000000000005D,
+			);
+			name = MacroLog;
+			productName = MacroLog;
+			productReference = 000000000000000000000001 /* MacroLog.app */;
+			productType = "com.apple.product-type.application";
+		};
+		00000000000000000000004A /* MacroLogWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 000000000000000000000055;
+			buildPhases = (
+				000000000000000000000050,
+				000000000000000000000051,
+				000000000000000000000052,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = MacroLogWidget;
+			productName = MacroLogWidget;
+			productReference = 000000000000000000000002 /* MacroLogWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		00000000000000000000004B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					000000000000000000000049 = {CreatedOnToolsVersion = 16.0;};
+					00000000000000000000004A = {CreatedOnToolsVersion = 16.0;};
+				};
+			};
+			buildConfigurationList = 000000000000000000000053;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = 00000000000000000000005E;
+			productRefGroup = 00000000000000000000005F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				000000000000000000000049 /* MacroLog */,
+				00000000000000000000004A /* MacroLogWidget */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		00000000000000000000004E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000041 /* Assets.xcassets */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000052 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000047 /* Assets.xcassets */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		00000000000000000000004C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000027 /* MacroLogApp.swift */,
+				000000000000000000000028 /* Theme.swift */,
+				000000000000000000000029 /* EntryStatus.swift */,
+				00000000000000000000002A /* FoodEntry.swift */,
+				00000000000000000000002B /* MacroEstimate.swift */,
+				00000000000000000000002C /* AnthropicClient.swift */,
+				00000000000000000000002D /* EntryStore.swift */,
+				00000000000000000000002E /* EstimationError.swift */,
+				00000000000000000000002F /* EstimationPrompt.swift */,
+				000000000000000000000030 /* EstimationService.swift */,
+				000000000000000000000031 /* HealthKitService.swift */,
+				000000000000000000000032 /* ImageProcessing.swift */,
+				000000000000000000000033 /* Secrets.swift */,
+				000000000000000000000034 /* CaptureViewModel.swift */,
+				000000000000000000000035 /* CameraController.swift */,
+				000000000000000000000036 /* CameraPreview.swift */,
+				000000000000000000000037 /* CaptureView.swift */,
+				000000000000000000000038 /* ReviewView.swift */,
+				000000000000000000000039 /* RootView.swift */,
+				00000000000000000000003A /* TextEntrySheet.swift */,
+				00000000000000000000003B /* TodayListView.swift */,
+				00000000000000000000003C /* MacroRing.swift */,
+				00000000000000000000003D /* UnsupportedDeviceView.swift */,
+				00000000000000000000003E /* Macros.swift */,
+				00000000000000000000003F /* SharedConstants.swift */,
+				000000000000000000000040 /* TodaySnapshot.swift */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000050 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000042 /* MacroLogWidgetBundle.swift */,
+				000000000000000000000043 /* TodayWidget.swift */,
+				000000000000000000000044 /* Macros.swift */,
+				000000000000000000000045 /* SharedConstants.swift */,
+				000000000000000000000046 /* TodaySnapshot.swift */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		00000000000000000000005D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 00000000000000000000004A /* MacroLogWidget */;
+			targetProxy = 00000000000000000000005C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+		000000000000000000000056 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		000000000000000000000057 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		000000000000000000000058 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 000000000000000000000009 /* Secrets.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacroLog/Resources/MacroLog.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MacroLog/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.macrolog.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		000000000000000000000059 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 000000000000000000000009 /* Secrets.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacroLog/Resources/MacroLog.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MacroLog/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.macrolog.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		00000000000000000000005A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacroLogWidget/MacroLogWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MacroLogWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.macrolog.app.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		00000000000000000000005B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacroLogWidget/MacroLogWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MacroLogWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.macrolog.app.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+
+/* Begin XCConfigurationList section */
+		000000000000000000000053 /* Build configuration list for PBXProject */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000000000056 /* Debug */,
+				000000000000000000000057 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		000000000000000000000054 /* Build configuration list for PBXNativeTarget "MacroLog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000000000058 /* Debug */,
+				000000000000000000000059 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		000000000000000000000055 /* Build configuration list for PBXNativeTarget "MacroLogWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00000000000000000000005A /* Debug */,
+				00000000000000000000005B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 00000000000000000000004B /* Project object */;
+}

@@ -1,0 +1,11 @@
+# Secrets — never commit the API key (SEC-01 / D-05)
+MacroLog/Config/Secrets.xcconfig
+
+# macOS / Xcode
+.DS_Store
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+build/
+*.xcuserstate
+.swiftpm/

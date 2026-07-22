@@ -1,0 +1,60 @@
+# XcodeGen spec — the canonical project definition.
+# Regenerate the .xcodeproj at any time with:  xcodegen generate
+#
+# The committed MacroLog.xcodeproj is generated from this file; if it ever gets
+# out of sync or won't open, run the command above to rebuild it.
+
+name: MacroLog
+options:
+  bundleIdPrefix: com.macrolog
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: ""            # set your Apple Developer team here
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  MacroLog:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - MacroLog
+      - MacroLogShared
+    configFiles:
+      Debug: MacroLog/Config/Secrets.xcconfig
+      Release: MacroLog/Config/Secrets.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.macrolog.app
+        INFOPLIST_FILE: MacroLog/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: MacroLog/Resources/MacroLog.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "1"     # iPhone only (TGT-01)
+        GENERATE_INFOPLIST_FILE: NO
+    dependencies:
+      - target: MacroLogWidget
+        embed: true
+
+  MacroLogWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - MacroLogWidget
+      - MacroLogShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.macrolog.app.widget
+        INFOPLIST_FILE: MacroLogWidget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: MacroLogWidget/MacroLogWidget.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
