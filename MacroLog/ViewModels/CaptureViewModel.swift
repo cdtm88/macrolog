@@ -14,13 +14,17 @@ final class CaptureViewModel {
 
     // Flow
     var captureState: CaptureState = .idle
-    var isShowingReview = false
     var isShowingText = false
     var isShowingList = false
 
     /// The entry currently in review (either a fresh pending estimate or an
     /// existing entry being edited).
     var reviewEntry: FoodEntry?
+
+    /// The photo behind the entry in review, shown as its thumbnail. Memory
+    /// only — photos are never persisted (SEC-03), so an entry recovered after
+    /// relaunch or edited from the list falls back to the placeholder.
+    var reviewImage: UIImage?
     private var isEditingExisting = false
 
     // Pending estimate awaiting review, surfaced on the capture view (REV-03).
@@ -174,9 +178,27 @@ final class CaptureViewModel {
     // MARK: - Review
 
     func openReview(for entry: FoodEntry, editingExisting: Bool) {
-        reviewEntry = entry
+        // The review cover, the list sheet, and the text sheet all present from
+        // the same view, and UIKit allows only one presentation at a time —
+        // showing review while a sheet is up (list edit, or an estimate landing
+        // with a sheet open) intermittently breaks the cover's layout. Dismiss
+        // any open sheet first and wait out its animation before presenting.
+        if isShowingList || isShowingText {
+            isShowingList = false
+            isShowingText = false
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(500))
+                presentReview(for: entry, editingExisting: editingExisting)
+            }
+        } else {
+            presentReview(for: entry, editingExisting: editingExisting)
+        }
+    }
+
+    private func presentReview(for entry: FoodEntry, editingExisting: Bool) {
         isEditingExisting = editingExisting
-        isShowingReview = true
+        reviewImage = editingExisting ? nil : lastImage
+        reviewEntry = entry   // item-based presentation: setting this shows review
     }
 
     /// Re-open the pending estimate from the capture view without navigating
@@ -247,8 +269,8 @@ final class CaptureViewModel {
     }
 
     private func closeReviewToCapture() {
-        isShowingReview = false
         reviewEntry = nil
+        reviewImage = nil
         if !isEditingExisting { pendingEntry = nil; captureState = .idle }
         isEditingExisting = false
     }

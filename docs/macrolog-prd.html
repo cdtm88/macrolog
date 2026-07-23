@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>MacroLog PRD</title>
+<style>
+  :root { color-scheme: light only; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #ffffff; color: #1a1a1a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 16px; line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 18px 64px; }
+  h1 { font-size: 1.75rem; line-height: 1.25; margin: 0 0 4px; color: #111111; letter-spacing: -0.02em; }
+  .sub { color: #555555; font-size: 0.95rem; margin: 0 0 28px; }
+  h2 {
+    font-size: 1.2rem; margin: 40px 0 12px; color: #111111;
+    padding-bottom: 8px; border-bottom: 2px solid #e0e0e0; letter-spacing: -0.01em;
+  }
+  h3 { font-size: 1rem; margin: 24px 0 8px; color: #222222; }
+  p { margin: 0 0 12px; color: #1a1a1a; }
+  ul { margin: 0 0 14px; padding-left: 22px; }
+  li { margin-bottom: 6px; color: #1a1a1a; }
+  code {
+    background: #f2f2f2; color: #1a1a1a;
+    padding: 1px 5px; border-radius: 3px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em;
+    word-break: break-word;
+  }
+  .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 0 18px; border: 1px solid #dddddd; border-radius: 6px; background: #ffffff; }
+  table { border-collapse: collapse; width: 100%; background: #ffffff; font-size: 0.9rem; }
+  th {
+    background: #f0f0f0 !important; color: #111111 !important;
+    text-align: left; padding: 10px 12px; font-weight: 600;
+    border-bottom: 2px solid #dddddd; white-space: nowrap;
+  }
+  td { background: #ffffff !important; color: #1a1a1a !important; padding: 10px 12px; border-bottom: 1px solid #ececec; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; white-space: nowrap; color: #1a1a1a !important; }
+  .note {
+    background: #f7f7f7; border-left: 3px solid #999999;
+    padding: 12px 14px; margin: 0 0 18px; border-radius: 0 4px 4px 0;
+    color: #1a1a1a;
+  }
+  .note strong { color: #111111; }
+  .phase {
+    border: 1px solid #dddddd; border-radius: 6px;
+    padding: 14px 16px; margin: 0 0 14px; background: #ffffff;
+  }
+  .phase h3 { margin-top: 0; }
+  .meta { font-size: 0.85rem; color: #555555; margin: 6px 0 0; }
+  .meta strong { color: #333333; }
+  ol.meta { padding-left: 22px; margin: 8px 0 0; }
+  ol.meta li { color: #555555; margin-bottom: 5px; font-size: 0.85rem; }
+  ol.meta li em { color: #333333; }
+  .prov {
+    display: inline-block; font-size: 0.65rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    background: #f0e6d2 !important; color: #7a5a10 !important;
+    padding: 2px 7px; border-radius: 3px; vertical-align: middle;
+    margin-left: 8px;
+  }
+  .chk { list-style: none; padding-left: 0; }
+  .chk li { padding-left: 24px; position: relative; }
+  .chk li::before { content: "\2713"; position: absolute; left: 0; color: #2a7a2a; font-weight: 700; }
+  hr { border: none; border-top: 1px solid #e0e0e0; margin: 44px 0; }
+  @media (max-width: 600px) {
+    .wrap { padding: 18px 14px 48px; }
+    h1 { font-size: 1.45rem; }
+    table { font-size: 0.85rem; }
+    th, td { padding: 8px 10px; }
+  }
+  @media (prefers-color-scheme: dark) {
+    html, body, .wrap { background: #ffffff !important; color: #1a1a1a !important; }
+    h1, h2, h3, p, li, strong, em, td, td.id, summary { color: #1a1a1a !important; }
+    h1, h2, h3 { color: #111111 !important; }
+    .sub, .meta { color: #555555 !important; }
+    .meta strong { color: #333333 !important; }
+    ol.meta li { color: #555555 !important; }
+    ol.meta li em { color: #333333 !important; }
+    .prov { background: #f0e6d2 !important; color: #7a5a10 !important; }
+    table, .tw, td, .phase, .note { background: #ffffff !important; }
+    td { background: #ffffff !important; }
+    th { background: #f0f0f0 !important; color: #111111 !important; }
+    code { background: #f2f2f2 !important; color: #1a1a1a !important; }
+    .note { background: #f7f7f7 !important; color: #1a1a1a !important; }
+    .note strong { color: #111111 !important; }
+    .phase { background: #ffffff !important; }
+    .chk li { color: #1a1a1a !important; }
+    .chk li::before { color: #2a7a2a !important; }
+    hr { border-top-color: #e0e0e0 !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>MacroLog</h1>
+<p class="sub">Product Requirements Document &middot; target framework: GSD &middot; 22 July 2026</p>
+
+<h2>1. Project identity</h2>
+<p><strong>Name:</strong> MacroLog</p>
+<p><strong>What it is:</strong> A single-purpose iOS app that turns a photo or text description of a meal into a macronutrient estimate and writes it to Apple Health, so that Whoop's Journal can auto-populate its nutrition entries. It does one thing: meal in, macros to Health. It deliberately does not track exercise, weight, goals, streaks, or history, because Whoop already owns all of that.</p>
+<p><strong>Target user:</strong> One person (the author). Whoop 5.0 user who wants macro data feeding Recovery correlations without paying for or tolerating a full nutrition platform.</p>
+<p><strong>Core value:</strong> Log a meal's macros to Apple Health in seconds, without ads, upsells, or features you did not ask for.</p>
+<p><strong>Stage:</strong> Greenfield.</p>
+
+<h2>2. Success criteria</h2>
+<ul>
+  <li>90% or more of meals logged over a rolling 30-day period, measured as days with at least two entries divided by days elapsed.</li>
+  <li>Whoop Journal pre-fills protein, carbohydrate, and fat values from MacroLog's Health writes without manual entry, verified on 5 consecutive days.</li>
+  <li>Zero data-loss incidents: no user input is ever discarded by an app error or network failure.</li>
+  <li>MyFitnessPal uninstalled and not reinstalled within 30 days of MacroLog going into daily use.</li>
+</ul>
+
+<h2>3. Users and primary jobs</h2>
+<div class="tw">
+<table>
+  <thead><tr><th>Job</th><th>User role</th><th>Needed outcome</th></tr></thead>
+  <tbody>
+    <tr><td>Log a meal I just ate</td><td>Primary user, in the moment, often one-handed</td><td>Macros in Apple Health within seconds, without leaving the meal</td></tr>
+    <tr><td>Correct an estimate I do not believe</td><td>Primary user, reviewing before commit</td><td>Adjust the numbers before they reach Health, or fix them shortly after</td></tr>
+    <tr><td>See what I have logged today</td><td>Primary user, glancing at phone</td><td>Running total for the day without opening the app</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Job one, working perfectly, makes this worth shipping. The other two exist to protect it.</p>
+
+<h2>4. Scope</h2>
+<h3>In scope (v1)</h3>
+<ul>
+  <li>Photo capture as the default input; text description as an equal-status alternative one tap away.</li>
+  <li>AI estimation of calories, protein, carbohydrates, and fat from either input type.</li>
+  <li>Mandatory review and edit step before any write to Apple Health.</li>
+  <li>Write to Apple Health as an <code>HKCorrelation</code> of type <code>.food</code>, per meal.</li>
+  <li>Today's entry list with edit and delete, both reconciling the corresponding Health sample.</li>
+  <li>Home Screen widget showing today's running totals.</li>
+</ul>
+<h3>Out of scope (deferred to BACKLOG)</h3>
+<ul>
+  <li>Notifications and reminders of any kind. Revisit only if adherence measurably fails.</li>
+  <li>Fibre, sugar, sodium, micronutrients. Whoop's Journal has no entries for them, so they would be written and ignored.</li>
+  <li>Food database, barcode scanning, branded-item lookup.</li>
+  <li>History beyond today, charts, trends, weekly summaries. Whoop is the history view.</li>
+  <li>Goals, targets, streaks, gamification.</li>
+  <li>Exercise, weight, water, or any non-macro tracking.</li>
+  <li>Multi-user, sync, cloud backup, App Store distribution.</li>
+  <li>Apple Watch app.</li>
+  <li>Offline queue with automatic retry. v1 fails loudly and lets the user retry manually.</li>
+</ul>
+
+<h2>5. Requirements</h2>
+
+<h3>Input and capture (CAP)</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>ID</th><th>Requirement (binary criterion)</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td class="id">CAP-01</td><td>Launching the app presents the camera capture view as the default input, with no intermediate menu or tab selection.</td><td>04</td></tr>
+    <tr><td class="id">CAP-02</td><td>A text-entry input is reachable from the capture view in a single tap and accepts a free-text meal description.</td><td>02</td></tr>
+    <tr><td class="id">CAP-03</td><td>Submitting a photo or text returns control to the capture view immediately; the estimate resolves without blocking further input.</td><td>04</td></tr>
+    <tr><td class="id">CAP-04</td><td>A photo can be selected from the photo library as an alternative to live capture.</td><td>02</td></tr>
+    <tr><td class="id">CAP-05</td><td>No user input is discarded on app backgrounding, termination, or estimation failure; the pending entry is recoverable on next launch.</td><td>03</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Estimation (EST)</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>ID</th><th>Requirement (binary criterion)</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td class="id">EST-01</td><td>A submitted photo or text description returns calories (kcal), protein (g), carbohydrate (g), and fat (g) as numeric values.</td><td>02</td></tr>
+    <tr><td class="id">EST-02</td><td>The estimation request uses a fixed system prompt held in a single source constant; the prompt is not varied per request.</td><td>02</td></tr>
+    <tr><td class="id">EST-03</td><td>The model returns parseable JSON with exactly the four numeric keys; a non-parseable response surfaces an error state rather than silently writing zeros or partial data.</td><td>02</td></tr>
+    <tr><td class="id">EST-04</td><td>When the food in a photo cannot be identified, the app prompts for a supplementary text description rather than returning a guess.</td><td>02</td></tr>
+    <tr><td class="id">EST-05</td><td>With no network connectivity, submission fails with an explicit message naming connectivity as the cause and offers manual retry; the input is preserved.</td><td>02</td></tr>
+    <tr><td class="id">EST-06</td><td>The prompt instructs the model to account for cooking oils, butter, and sauces, and to return a single point estimate rather than a range or hedged answer.</td><td>02</td></tr>
+    <tr><td class="id">EST-07</td><td>An API-level failure (authentication, rate limit, quota, server error) surfaces a message distinguishable from a connectivity failure and names the cause.</td><td>02</td></tr>
+    <tr><td class="id">EST-08</td><td>Captured and library-selected images are normalised for EXIF orientation before transmission, so the model receives an upright image regardless of device orientation at capture.</td><td>02</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Review and edit (REV)</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>ID</th><th>Requirement (binary criterion)</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td class="id">REV-01</td><td>No write to Apple Health occurs until the user has explicitly confirmed the estimate.</td><td>02</td></tr>
+    <tr><td class="id">REV-02</td><td>All four macro values are individually editable in the review step before confirmation.</td><td>02</td></tr>
+    <tr><td class="id">REV-03</td><td>A pending estimate awaiting review is visible from the capture view without navigating away from it.</td><td>04</td></tr>
+    <tr><td class="id">REV-04</td><td>Discarding an estimate at review writes nothing to Apple Health and removes the pending entry.</td><td>03</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Apple Health integration (HK)</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>ID</th><th>Requirement (binary criterion)</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td class="id">HK-01</td><td>The app requests write authorisation for exactly four types: <code>dietaryEnergyConsumed</code>, <code>dietaryProtein</code>, <code>dietaryCarbohydrates</code>, <code>dietaryFatTotal</code>.</td><td>01</td></tr>
+    <tr><td class="id">HK-02</td><td>A confirmed meal writes one <code>HKCorrelation</code> of type <code>.food</code> containing the four quantity samples, timestamped to the meal's logged time.</td><td>01</td></tr>
+    <tr><td class="id">HK-03</td><td>The meal description is attached to the correlation as metadata and is visible in the Apple Health app.</td><td>01</td></tr>
+    <tr><td class="id">HK-04</td><td>The <code>HKCorrelation</code> UUID is persisted alongside the local entry immediately on successful write.</td><td>01</td></tr>
+    <tr><td class="id">HK-05</td><td>The app functions on a device where HealthKit is unavailable by surfacing an explicit unsupported-device state rather than crashing.</td><td>01</td></tr>
+    <tr><td class="id">HK-06</td><td>A failed Health write leaves the local entry marked as unwritten and offers retry; it is never silently marked as logged.</td><td>03</td></tr>
+    <tr><td class="id">HK-07</td><td>Write authorisation being denied at the initial prompt surfaces an explicit state directing the user to Settings; the app does not present a generic failure or retry loop.</td><td>01</td></tr>
+    <tr><td class="id">HK-08</td><td>After two consecutive Health write failures, the app surfaces a "check Health permissions" path distinct from a network or API error, since HealthKit does not expose the reason for a denied write.</td><td>03</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Entry lifecycle (ENT)</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>ID</th><th>Requirement (binary criterion)</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td class="id">ENT-01</td><td>Confirmed entries for the current day are listed with description, time, and the four macro values.</td><td>03</td></tr>
+    <tr><td class="id">ENT-02</td><td>Deleting an entry deletes its corresponding <code>HKCorrelation</code> from Apple Health using the stored UUID.</td><td>03</td></tr>
+    <tr><td class="id">ENT-03</td><td>Editing an entry's macro values deletes the existing Health correlation and writes a replacement, leaving exactly one correlation for that entry.</td><td>03</td></tr>
+    <tr><td class="id">ENT-04</td><td>Entries older than the current day that have been successfully written to Health are removed from the local store; the app retains no history beyond today. Entries that are pending review or unwritten to Health are never purged regardless of age.</td><td>03</td></tr>
+    <tr><td class="id">ENT-05</td><td>Deleting or editing an entry whose Health sample no longer exists completes without error.</td><td>03</td></tr>
+    <tr><td class="id">ENT-06</td><td>The Health sample is timestamped to the moment of capture (photo taken or text submitted), not the moment of review confirmation.</td><td>02</td></tr>
+    <tr><td class="id">ENT-07</td><td>An entry captured before local midnight but confirmed after it is written to the capture day, not the confirmation day.</td><td>03</td></tr>
+    <tr><td class="id">ENT-08</td><td>The entry timestamp is editable in the review step, so a meal logged late can be corrected to its actual time.</td><td>03</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Widget (WID)</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>ID</th><th>Requirement (binary criterion)</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td class="id">WID-01</td><td>A Home Screen widget displays today's cumulative calories, protein, carbohydrate, and fat.</td><td>05</td></tr>
+    <tr><td class="id">WID-02</td><td>The widget reflects a newly confirmed entry within 60 seconds without the app being reopened.</td><td>05</td></tr>
+    <tr><td class="id">WID-03</td><td>Tapping the widget opens the app directly into the capture view.</td><td>05</td></tr>
+    <tr><td class="id">WID-04</td><td>With no entries logged today, the widget displays zero values rather than an empty or error state.</td><td>05</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Non-functional</h3>
+<div class="tw">
+<table>
+  <thead><tr><th>ID</th><th>Requirement (binary criterion)</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td class="id">PERF-01</td><td>Cold launch to a camera view ready for capture completes in under 1.5 seconds on the target device.</td><td>04</td></tr>
+    <tr><td class="id">PERF-02</td><td>Submitting an input returns UI control in under 200ms, independent of estimation latency.</td><td>04</td></tr>
+    <tr><td class="id">PERF-03</td><td>A photo estimate typically resolves within 10 seconds on a normal connection; an estimate exceeding 20 seconds surfaces a still-working indication rather than appearing stalled.</td><td>02</td></tr>
+    <tr><td class="id">PERF-04</td><td>Captured images are downscaled before transmission such that no request payload exceeds 2MB.</td><td>02</td></tr>
+    <tr><td class="id">SEC-01</td><td>The Anthropic API key is held in a gitignored configuration file and appears nowhere in version control history.</td><td>02</td></tr>
+    <tr><td class="id">SEC-02</td><td>The app requests HealthKit write access only; no read authorisation is requested for any type.</td><td>01</td></tr>
+    <tr><td class="id">SEC-03</td><td>Meal photographs are transmitted to the Anthropic API and are not persisted beyond the local entry lifecycle.</td><td>03</td></tr>
+    <tr><td class="id">SCALE-01</td><td>Correct behaviour with up to 10 entries in a single day.</td><td>03</td></tr>
+    <tr><td class="id">A11Y-01</td><td>All interactive controls carry accessibility labels and the app is operable with Dynamic Type at the largest standard size without clipping.</td><td>04</td></tr>
+    <tr><td class="id">TGT-01</td><td>Runs on iOS 18 or later on iPhone. iPad and Apple Watch are not supported targets.</td><td>01</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>6. Technical decisions (locked)</h2>
+<div class="tw">
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Rationale</th></tr></thead>
+  <tbody>
+    <tr><td class="id">D-01</td><td>Native iOS, SwiftUI, iOS 18+ minimum</td><td>HealthKit write requires a native app; no cross-platform route exists. Single-user app, so no reason to support older OS versions.</td></tr>
+    <tr><td class="id">D-02</td><td>SwiftData for the local entry store</td><td>Only today's entries plus pending items are stored; SwiftData is the lowest-ceremony persistence for a single model.</td></tr>
+    <tr><td class="id">D-03</td><td>Direct calls to the Anthropic API from the app; no backend</td><td>Single user, no shared state, no need for a server. Removes an entire deployment surface.</td></tr>
+    <tr><td class="id">D-04</td><td>Latest Sonnet model for estimation, with Opus as a fallback if estimate quality proves inadequate</td><td>Sonnet is fast and cheap enough that per-meal latency stays tolerable; escalate only on evidence.</td></tr>
+    <tr><td class="id">D-05</td><td>API key in a gitignored configuration file</td><td>Keeps the key out of the repository, which is the material risk for a personal unlisted app. Accepted trade-off: the key is present in the compiled binary and is not protected against device-level extraction.</td></tr>
+    <tr><td class="id">D-06</td><td>Write calories, protein, carbohydrate, and fat only</td><td>These are the only macronutrient entries Whoop's Journal reads. Anything else is written and ignored.</td></tr>
+    <tr><td class="id">D-07</td><td>One <code>HKCorrelation</code> per meal, not per day</td><td>HealthKit sums samples into a daily total for Whoop regardless of granularity; per-meal correlations are legible in the Health app at no extra cost.</td></tr>
+    <tr><td class="id">D-08</td><td>Deleting a local entry deletes the Health sample</td><td>Leaving the sample means a deleted meal still counts in Whoop's daily total, which silently corrupts the data the app exists to produce.</td></tr>
+    <tr><td class="id">D-09</td><td>No notifications in v1; Home Screen widget instead</td><td>Reducing the cost of logging holds up better over months than nagging about not logging, and avoids dismissal fatigue.</td></tr>
+    <tr><td class="id">D-10</td><td>Fail loudly on network and identification errors; no silent guessing</td><td>A wrong number the user does not know is wrong is worse than a visible failure they can retry.</td></tr>
+    <tr><td class="id">D-11</td><td>Timestamp entries at capture, not at review confirmation</td><td>Review-before-write means capture and confirmation can be hours apart. Confirming a late dinner after midnight would otherwise land it on the wrong day and corrupt the daily total Whoop correlates against.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>7. Work units (GSD phases)</h2>
+<p>One milestone: <strong>M1 &mdash; Working daily logger.</strong> Phases are ordered so that the two highest risks (Whoop not reading the data; the author not sticking with logging) are tested before any polish is built.</p>
+
+<div class="phase">
+  <h3>01 &mdash; health-write-path</h3>
+  <p>Prove that a non-partner app writing macros to Apple Health is picked up by Whoop's Journal pre-fill.</p>
+  <p class="meta"><strong>REQ-IDs:</strong> HK-01, HK-02, HK-03, HK-04, HK-05, HK-07, SEC-02, TGT-01</p>
+  <p class="meta"><strong>Done:</strong> A one-button app writes a hardcoded <code>HKCorrelation</code> to Health; the values appear in the Apple Health app with the description visible; the Whoop Journal pre-fills those values on the same day.</p>
+  <p class="meta"><strong>Verification procedure (follow exactly; the pre-fill is order-dependent):</strong></p>
+  <ol class="meta">
+    <li>Confirm today's Whoop Journal has <em>not</em> already been saved. If it has, the pre-fill prompt will not appear again until tomorrow and the test cannot run today.</li>
+    <li>Write the test correlation from the app.</li>
+    <li>Open the Apple Health app and confirm the four values and the description are present, sourced from MacroLog.</li>
+    <li>Open the Whoop Journal and start a new entry. Confirm the blue "data pre-filled via Apple Health" banner appears and the protein, carbohydrate, and fat values match what was written.</li>
+    <li>If the banner does not appear, check Whoop's Apple Health permissions before assuming an app-side defect.</li>
+  </ol>
+</div>
+
+<div class="phase">
+  <h3>02 &mdash; estimation-core</h3>
+  <p>Turn a photo or text description into a reviewed, confirmed macro estimate written to Health.</p>
+  <p class="meta"><strong>REQ-IDs:</strong> CAP-02, CAP-04, EST-01, EST-02, EST-03, EST-04, EST-05, EST-06, EST-07, EST-08, REV-01, REV-02, ENT-06, PERF-03, PERF-04, SEC-01</p>
+  <p class="meta"><strong>Done:</strong> A photo of a real meal produces four numeric values, presented for review, editable, and written to Health on confirmation, timestamped to capture time. Airplane mode produces an explicit connectivity error with the input preserved. An invalid API key produces a different, correctly-named error. An unidentifiable photo prompts for text rather than guessing. A landscape photo is estimated as reliably as a portrait one.</p>
+</div>
+
+<div class="phase">
+  <h3>03 &mdash; entry-lifecycle</h3>
+  <p>Persist entries locally and keep the Apple Health record reconciled through edits and deletions.</p>
+  <p class="meta"><strong>REQ-IDs:</strong> CAP-05, REV-04, HK-06, HK-08, ENT-01, ENT-02, ENT-03, ENT-04, ENT-05, ENT-07, ENT-08, SEC-03, SCALE-01</p>
+  <p class="meta"><strong>Done:</strong> Today's entries are listed; deleting one removes its Health correlation; editing one leaves exactly one correlation with the new values; force-quitting mid-entry loses nothing; yesterday's written entries are gone from the local store but remain in Health, while an unwritten entry from yesterday survives the purge and can still be completed. An entry captured at 23:55 and confirmed at 00:05 lands on the capture day. Ten entries logged in one day list and total correctly. Revoking Health permission in Settings produces the permissions path, not a generic error.</p>
+</div>
+
+<div class="phase">
+  <h3>04 &mdash; friction-pass <span class="prov">provisional</span></h3>
+  <p>Remove every avoidable delay and tap between opening the app and a logged meal.</p>
+  <p class="meta"><strong>REQ-IDs (starting hypothesis, revise after the adherence checkpoint):</strong> CAP-01, CAP-03, REV-03, PERF-01, PERF-02, A11Y-01</p>
+  <p class="meta"><strong>Done:</strong> Launch lands directly on camera in under 1.5s; submitting returns control in under 200ms with the estimate resolving in the background; a pending review is visible without navigation; the app is fully operable at the largest Dynamic Type size.</p>
+</div>
+
+<div class="phase">
+  <h3>05 &mdash; today-widget <span class="prov">provisional</span></h3>
+  <p>Surface today's running macro totals on the Home Screen as a passive logging prompt.</p>
+  <p class="meta"><strong>REQ-IDs (starting hypothesis, revise after the adherence checkpoint):</strong> WID-01, WID-02, WID-03, WID-04</p>
+  <p class="meta"><strong>Done:</strong> A Home Screen widget shows today's four totals, updates within 60 seconds of a new entry without reopening the app, shows zeros before the first meal, and opens the capture view when tapped.</p>
+</div>
+
+<div class="note">
+  <strong>Adherence checkpoint.</strong> Phase 02 is the earliest point at which real meals can be logged daily, in a deliberately unpolished app. Use it for at least a week before starting phase 04. If logging does not hold up there, the failure mode is known cheaply and phases 04 and 05 can be redirected at the actual problem rather than a guessed one. Phases 04 and 05 are therefore marked <strong>provisional</strong>: their requirements are a starting hypothesis about what friction matters, not committed scope. Expect to rewrite them after the checkpoint, and do not treat unimplemented provisional requirements as failures.
+</div>
+
+<h2>8. Constraints and risks</h2>
+<ul>
+  <li><strong>No deadline.</strong> Build quality over speed. No scope/timeline tension in this project.</li>
+  <li><strong>Apple Developer account not yet held.</strong> $99/year, required before phase 01 can be tested on device for more than seven days. Free provisioning expires weekly, which is unusable for daily logging. This is a hard blocker on the adherence checkpoint, not just on distribution.</li>
+  <li><strong>Author directs, does not write code.</strong> All implementation via Claude Code. Requirements are therefore written as observable behaviour, not implementation detail.</li>
+  <li><strong>Top risk: adherence.</strong> The app is built and logging does not become habitual. Mitigated by ordering phases so real-world use starts after phase 02, and by choosing a widget over notifications.</li>
+  <li><strong>Second risk: Whoop pickup.</strong> Community reports exist of Apple Health nutrition failing to reach Whoop despite correct permissions. Mitigated by making phase 01 a standalone proof before any other work.</li>
+  <li><strong>Third risk: estimate quality on composite dishes.</strong> Photo-based estimation of restaurant food, curries, stews, and anything with absorbed oils is materially unreliable. Mitigated by the mandatory review step and by an equal-status text input. Escalation path is D-04 (Opus fallback).</li>
+  <li><strong>Known unknown: whether photo-default survives contact with reality.</strong> Photo input was chosen over text default against a recommendation. If review-step corrections become routine, revisit the default.</li>
+  <li><strong>No compliance surface.</strong> Single user, no distribution, no third-party data, no PII beyond the author's own meal data.</li>
+</ul>
+
+<h2>9. Assumptions</h2>
+<p>Inferred rather than stated. Correct anything wrong before starting phase 01.</p>
+<ul>
+  <li>Target device is a current iPhone running iOS 18 or later.</li>
+  <li>The app is for personal use only and will never be submitted to the App Store, so App Review constraints, privacy policy, and health-data advertising restrictions do not apply.</li>
+  <li>"Meal" means any eating occasion including snacks; no fixed breakfast/lunch/dinner slots are enforced.</li>
+  <li>API spend is low enough to need no in-app tracking; ENT and EST requirements cover surfacing failures, not monitoring cost. Spend is checked via the Anthropic console if it ever matters.</li>
+  <li>The Anthropic API is called with the vision-capable messages endpoint; no MCP servers or tools are needed.</li>
+  <li>English-language meal descriptions only.</li>
+  <li>Whoop is read-only from this app's perspective; there is no direct Whoop API integration and none is wanted.</li>
+  <li>Day boundaries follow the device's current local time zone. Crossing zones mid-day may shift which day an entry falls on; this is accepted as harmless for a correlation over weeks, and no reconciliation is built.</li>
+</ul>
+
+<h2>10. Ready checklist</h2>
+<ul class="chk">
+  <li>Every requirement has a stable <code>&lt;DOMAIN&gt;-&lt;NN&gt;</code> ID and states a binary pass/fail criterion.</li>
+  <li>Every phase has a one-sentence goal, its REQ-IDs, and a testable definition of done.</li>
+  <li>Every locked decision carries a one-line rationale, including accepted trade-offs.</li>
+  <li>Out-of-scope items are captured explicitly for BACKLOG.</li>
+  <li>Non-functional requirements carry numbers, not adjectives.</li>
+  <li>Phase scopes pass the not-too-big / not-too-small test; none exceeds a single reviewable increment.</li>
+  <li>Assumptions are listed separately for correction rather than buried in requirements.</li>
+</ul>
+
+<hr>
+
+<h2>GSD artifact map</h2>
+<p>How this document loads into <code>.planning/</code>:</p>
+<div class="tw">
+<table>
+  <thead><tr><th>PRD section</th><th>GSD artifact</th></tr></thead>
+  <tbody>
+    <tr><td>1 Project identity, 8 Constraints and risks</td><td><code>PROJECT.md</code></td></tr>
+    <tr><td>5 Requirements table</td><td><code>REQUIREMENTS.md</code></td></tr>
+    <tr><td>7 Work units</td><td><code>ROADMAP.md</code> (M1, phases 01&ndash;05)</td></tr>
+    <tr><td>6 Technical decisions</td><td><code>phases/&lt;NN&gt;-&lt;slug&gt;/&lt;NN&gt;-CONTEXT.md</code></td></tr>
+    <tr><td>4 Out of scope</td><td><code>BACKLOG.md</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <strong>Decision routing by phase.</strong>
+  01: D-01, D-06, D-07, D-08 &middot;
+  02: D-03, D-04, D-05, D-10, D-11 &middot;
+  03: D-02, D-08, D-11 &middot;
+  04: none &middot;
+  05: D-09
+</div>
+
+</div>
+</body>
+</html>

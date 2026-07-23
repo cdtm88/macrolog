@@ -1,0 +1,49 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project state
+
+MacroLog is currently **pre-implementation**. The repository contains only planning/design artifacts:
+
+- `docs/macrolog-prd.html` — the full Product Requirements Document (requirements IDs, locked technical decisions, phase breakdown). This is the source of truth for scope and architecture until GSD planning artifacts (`.planning/`) exist.
+- `docs/prototype.html` — a static bundled UI mockup export (not application source).
+- `docs/logo/` — app icon/logo SVGs (icon, lockup, mono/white/color marks).
+
+No Xcode project, Swift package, or app source exists yet, so there are no build/lint/test commands to document. Once phase 01 (`health-write-path`) is implemented, update this file with the actual Xcode scheme/build/test commands.
+
+## What MacroLog is
+
+A single-purpose, single-user iOS app: photo or text description of a meal in, macro estimate out, written to Apple Health as an `HKCorrelation` so Whoop's Journal auto-populates its nutrition entries. It deliberately does not track exercise, weight, history, or goals — see `docs/macrolog-prd.html` §4 for the full out-of-scope list before adding anything that looks like a nutrition-tracking feature.
+
+## Locked architecture decisions (from PRD §6 — do not relitigate without new evidence)
+
+- **Native iOS, SwiftUI, iOS 18+ only.** HealthKit write access requires a native app; no iPad/Watch targets.
+- **SwiftData** for local persistence — only today's entries plus pending (unreviewed) items are ever stored locally.
+- **No backend.** The app calls the Anthropic API directly for estimation; single user, no shared state.
+- **Estimation model:** Sonnet by default, Opus as a fallback only if estimate quality proves inadequate in practice.
+- **API key** lives in a gitignored config file — never commit it, and never add read-only telemetry/logging that could leak it.
+- Writes exactly four HealthKit types: `dietaryEnergyConsumed`, `dietaryProtein`, `dietaryCarbohydrates`, `dietaryFatTotal` — write-only authorization, no read access requested for any type.
+- **One `HKCorrelation` (type `.food`) per meal**, not per day; the correlation's UUID is persisted locally immediately after a successful write so edits/deletes can reconcile the Health sample.
+- **Entries are timestamped at capture time, not at review-confirmation time** — review-before-write means a meal captured before midnight but confirmed after must still land on the capture day.
+- Deleting a local entry deletes its Health sample; editing deletes-and-rewrites so exactly one correlation exists per entry.
+- **Fail loudly, never guess silently:** connectivity failures, API failures, and unidentifiable photos each surface a distinct, explicit error state with the input preserved for retry — never a silent partial/zero write.
+- No notifications in v1 (a Home Screen widget is the passive nudge instead); no offline queue/auto-retry — user retries manually.
+
+## Phase roadmap (PRD §7)
+
+Work is organized as one milestone (M1) across 5 phases, deliberately ordered to de-risk the two biggest unknowns (does Whoop actually pick up the data; does the author actually keep logging) before any polish:
+
+1. **health-write-path** — prove a hardcoded `HKCorrelation` write is picked up by Whoop's Journal pre-fill. This is a standalone spike gating everything else; follow the exact verification procedure in the PRD (today's Whoop Journal must not already be saved, or the pre-fill test can't run until tomorrow).
+2. **estimation-core** — photo/text → AI estimate → mandatory review/edit → Health write, with the error-handling and EXIF-normalization requirements.
+3. **entry-lifecycle** — local persistence, edit/delete reconciling Health samples, day-boundary purge of already-written entries (never purge unwritten ones).
+4. **friction-pass** *(provisional — a starting hypothesis, expect to rewrite after the adherence checkpoint)* — launch speed, non-blocking submission, Dynamic Type support.
+5. **today-widget** *(provisional)* — Home Screen widget with today's totals.
+
+Phases 04 and 05 are explicitly not committed scope — the PRD calls for at least a week of real daily use after phase 02 before starting them, and treats their unimplemented requirements as expected, not a failure.
+
+## Working constraints
+
+- The author directs but does not write code — implementation is entirely through Claude Code. Keep requirements/behavior observable rather than buried in implementation detail, matching the PRD's own style (binary pass/fail criteria per requirement ID).
+- No deadline; prioritize correctness/quality over speed.
+- This is a personal, unlisted app — no App Store distribution, no privacy-policy/App-Review constraints apply. Don't add compliance scaffolding it doesn't need.

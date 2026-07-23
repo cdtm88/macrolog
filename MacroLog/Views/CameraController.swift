@@ -10,9 +10,12 @@ final class CameraController: NSObject, ObservableObject {
 
     @Published private(set) var status: Status = .configuring
 
-    let session = AVCaptureSession()
+    // Accessed from both the main actor (preview layer, capture trigger) and
+    // sessionQueue (configuration, start/stop), per AVCaptureSession's
+    // documented usage pattern — hence nonisolated(unsafe).
+    nonisolated(unsafe) let session = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "macrolog.camera.session")
-    private let photoOutput = AVCapturePhotoOutput()
+    private nonisolated(unsafe) let photoOutput = AVCapturePhotoOutput()
     private var captureContinuation: CheckedContinuation<UIImage?, Never>?
 
     func configureAndStart() {

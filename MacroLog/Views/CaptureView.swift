@@ -26,14 +26,16 @@ struct CaptureView: View {
         .sheet(isPresented: $model.isShowingText) {
             TextEntrySheet(model: model)
                 .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $model.isShowingList) {
             TodayListView(model: model)
         }
-        .fullScreenCover(isPresented: $model.isShowingReview) {
-            if let entry = model.reviewEntry {
-                ReviewView(model: model, entry: entry)
-            }
+        // Item-based presentation: the cover's content is unconditional, so the
+        // hosting controller always lays it out full-screen (an `if let` inside
+        // `fullScreenCover(isPresented:)` can leave the view floating mid-screen).
+        .fullScreenCover(item: $model.reviewEntry) { entry in
+            ReviewView(model: model, entry: entry)
         }
         .overlay(alignment: .top) { toast }
         .alert(item: $model.estimationError) { error in

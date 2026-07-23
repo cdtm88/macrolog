@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// The mandatory review-and-edit step. No write to Apple Health happens until
 /// the user taps "Log to Health" here (REV-01). All four macros and the
@@ -56,7 +57,10 @@ struct ReviewView: View {
                 .tracking(0.6)
                 .foregroundStyle(Color(hex: 0xC7C7CC))
             Spacer()
-            Color.clear.frame(width: 56)
+            // Balances the Discard button so the title stays centered. Height
+            // must be pinned: a bare `Color` is greedy on both axes and would
+            // stretch the header to fill the screen.
+            Color.clear.frame(width: 56, height: 1)
         }
         .padding(.horizontal, 20)
         .padding(.top, 20)
@@ -65,10 +69,18 @@ struct ReviewView: View {
 
     private var mealHeader: some View {
         HStack(spacing: 13) {
-            RoundedRectangle(cornerRadius: 14)
-                .fill(LinearGradient(colors: [Color(hex: 0x8A6F4F), Color(hex: 0x3A2F24)],
-                                     startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 52, height: 52)
+            Group {
+                if let photo = model.reviewImage {
+                    Image(uiImage: photo)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    LinearGradient(colors: [Color(hex: 0x8A6F4F), Color(hex: 0x3A2F24)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
+            }
+            .frame(width: 52, height: 52)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name)
                     .font(.system(size: 18, weight: .bold))
@@ -216,4 +228,16 @@ struct ReviewView: View {
             UIApplication.shared.open(url)
         }
     }
+}
+
+#Preview {
+    let container = try! ModelContainer(
+        for: FoodEntry.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    let entry = FoodEntry(name: "Protein shake & banana",
+                          macros: Macros(kcal: 320, protein: 30, carbs: 38, fat: 6),
+                          capturedAt: .now,
+                          status: .pendingReview)
+    return ReviewView(model: CaptureViewModel(context: container.mainContext), entry: entry)
+        .modelContainer(container)
 }
