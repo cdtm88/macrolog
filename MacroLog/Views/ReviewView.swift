@@ -31,6 +31,7 @@ struct ReviewView: View {
                     mealHeader
                     if model.showPermissionEscalation { permissionBanner }
                     ringCard
+                    portionCard
                     stepperCard
                     timeCard
                 }
@@ -135,6 +136,42 @@ struct ReviewView: View {
         }
     }
 
+    /// One-tap scaling of all four macros for portion adjustments —
+    /// "ate half of it" without stepper marathons.
+    private var portionCard: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Portion").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text("Scales all four numbers").font(.system(size: 11)).foregroundStyle(Theme.secondary)
+            }
+            Spacer(minLength: 8)
+            HStack(spacing: 7) {
+                portionChip("½×", factor: 0.5)
+                portionChip("¾×", factor: 0.75)
+                portionChip("1½×", factor: 1.5)
+                portionChip("2×", factor: 2)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 24))
+    }
+
+    private func portionChip(_ label: String, factor: Double) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.15)) { model.scale(entry, by: factor) }
+        } label: {
+            Text(label)
+                .font(.system(size: 13, weight: .bold))
+                .monospacedDigit()
+                .foregroundStyle(Theme.accent)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Theme.groupedBackground, in: Capsule())
+        }
+        .accessibilityLabel("Scale portion by \(label)")
+    }
+
     private var stepperCard: some View {
         VStack(spacing: 0) {
             ForEach(Array(fields.enumerated()), id: \.offset) { index, field in
@@ -203,6 +240,8 @@ struct ReviewView: View {
                 .frame(width: 30, height: 30)
                 .background(Theme.groupedBackground, in: Circle())
         }
+        // Hold to repeat — large adjustments without tap marathons.
+        .buttonRepeatBehavior(.enabled)
     }
 
     private var confirmBar: some View {

@@ -40,10 +40,15 @@ struct AnthropicClient {
     /// Sends a single-user-turn request and returns the concatenated text of the
     /// assistant's response. Throws an `EstimationError` on any failure so the UI
     /// can distinguish connectivity from API problems.
+    ///
+    /// When `outputSchema` is provided it is sent as a structured-output format,
+    /// so the response text is guaranteed to be JSON matching the schema (EST-03
+    /// — no unparseable responses).
     func complete(model: String,
                   system: String,
                   content: [Content],
-                  maxTokens: Int = 512) async throws -> String {
+                  maxTokens: Int = 512,
+                  outputSchema: [String: Any]? = nil) async throws -> String {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 60 // PERF-03 handles the "still working" hint in UI
@@ -51,7 +56,7 @@ struct AnthropicClient {
         request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         request.setValue(apiVersion, forHTTPHeaderField: "anthropic-version")
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "model": model,
             "max_tokens": maxTokens,
             "system": system,
@@ -59,6 +64,11 @@ struct AnthropicClient {
                 ["role": "user", "content": content.map(\.json)]
             ]
         ]
+        if let outputSchema {
+            body["output_config"] = [
+                "format": ["type": "json_schema", "schema": outputSchema]
+            ]
+        }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let data: Data

@@ -5,6 +5,7 @@ import SwiftUI
 /// denied (HK-07).
 struct RootView: View {
     @Bindable var model: CaptureViewModel
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -19,6 +20,11 @@ struct RootView: View {
             }
         }
         .task { await model.onLaunch() }
+        // Day-boundary maintenance must also run when the app foregrounds
+        // across midnight without a cold launch (ENT-04, WID-02).
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { model.onBecameActive() }
+        }
         .onOpenURL { url in
             // Widget tap routes straight to capture (WID-03).
             if url == SharedConstants.captureURL {

@@ -54,6 +54,10 @@ final class CaptureViewModel {
     private var toastTask: Task<Void, Never>?
     private var longRunTask: Task<Void, Never>?
 
+    /// Start-of-day the last purge/snapshot maintenance ran for. Lets foreground
+    /// activation detect a midnight rollover without a cold launch.
+    private var lastMaintenanceDayStart: Date?
+
     init(context: ModelContext) {
         self.context = context
         self.store = EntryStore(context: context)
@@ -63,8 +67,27 @@ final class CaptureViewModel {
 
     func onLaunch() async {
         await requestHealthAuthorization()
-        store.purgeOldWrittenEntries()
+        runDayMaintenance()
         recoverPendingEntry()
+    }
+
+    /// Called whenever the app returns to the foreground. iOS keeps the app
+    /// resident for days, so day-boundary maintenance can't live only in
+    /// `onLaunch` — after a midnight rollover this re-runs the purge and
+    /// republishes the widget snapshot (ENT-04, WID-02). Also re-reads the
+    /// Health permission state, which may have changed in Settings.
+    func onBecameActive() {
+        if health.isAvailable {
+            healthState = health.isDenied ? .denied : .ok
+        }
+        let dayStart = Calendar.current.startOfDay(for: Date())
+        guard dayStart != lastMaintenanceDayStart else { return }
+        runDayMaintenance()
+    }
+
+    private func runDayMaintenance() {
+        lastMaintenanceDayStart = Calendar.current.startOfDay(for: Date())
+        store.purgeOldWrittenEntries()
         store.refreshTodaySnapshot()
     }
 
@@ -102,24 +125,36 @@ final class CaptureViewModel {
         }
     }
 
-    /// Submits a free-text description (CAP-02).
+    /// Submits a free-text description (CAP-02). When the text supplements an
+    /// unidentifiable photo, the photo is re-sent alongside it — it still
+    /// carries portion-size signal (EST-04).
     func submitText(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        let image = needsTextAfterPhoto ? lastImage : nil
         lastText = trimmed
-        lastImage = nil
+        lastImage = image
         isShowingText = false
         beginWork(capturedAt: Date()) { [estimator] in
-            try await estimator.estimate(text: trimmed)
+            try await estimator.estimate(text: trimmed, image: image)
         }
+    }
+
+    /// Clears the photo-fallback prompt when the text sheet is dismissed
+    /// without submitting, so a later manual text entry starts clean.
+    func textSheetDismissed() {
+        if captureState != .working { needsTextAfterPhoto = false }
     }
 
     /// Retries the last input after a recoverable error (EST-05, HK failures).
     func retryLast() {
-        if let image = lastImage {
+        if let text = lastText {
+            let image = lastImage
+            beginWork(capturedAt: Date()) { [estimator] in
+                try await estimator.estimate(text: text, image: image)
+            }
+        } else if let image = lastImage {
             submitPhoto(image)
-        } else if let text = lastText {
-            submitText(text)
         }
     }
 
@@ -135,14 +170,17 @@ final class CaptureViewModel {
             guard let self else { return }
             do {
                 let estimate = try await operation()
+                guard !Task.isCancelled else { return } // superseded by a newer submission
                 self.finishLongRunTimer()
                 self.handleEstimate(estimate, capturedAt: capturedAt)
-            } catch let error as EstimationError {
-                self.finishLongRunTimer()
-                self.handleEstimationError(error)
             } catch {
+                // A cancelled task was superseded by a newer submission — its
+                // CancellationError/URLError must not surface as an alert.
+                guard !Task.isCancelled else { return }
                 self.finishLongRunTimer()
-                self.handleEstimationError(.api(status: 0, message: error.localizedDescription))
+                let estimationError = (error as? EstimationError)
+                    ?? .api(status: 0, message: error.localizedDescription)
+                self.handleEstimationError(estimationError)
             }
         }
     }
@@ -211,6 +249,17 @@ final class CaptureViewModel {
     func adjust(_ entry: FoodEntry, keyPath: WritableKeyPath<Macros, Double>, by delta: Double) {
         var macros = entry.macros
         macros[keyPath: keyPath] = max(0, macros[keyPath: keyPath] + delta)
+        entry.macros = macros
+    }
+
+    /// Scales all four macros at once — "I ate half" without forty stepper taps
+    /// (REV-02 convenience).
+    func scale(_ entry: FoodEntry, by factor: Double) {
+        var macros = entry.macros
+        macros.kcal = max(0, (macros.kcal * factor).rounded())
+        macros.protein = max(0, (macros.protein * factor).rounded())
+        macros.carbs = max(0, (macros.carbs * factor).rounded())
+        macros.fat = max(0, (macros.fat * factor).rounded())
         entry.macros = macros
     }
 

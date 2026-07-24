@@ -44,4 +44,27 @@ enum EstimationPrompt {
     static func textInstruction(_ description: String) -> String {
         "Estimate the macros for this meal: \(description)"
     }
+
+    /// Instruction when a photo could not be identified and the user supplied a
+    /// text description — the photo is re-sent for portion-size context (EST-04).
+    static func photoWithTextInstruction(_ description: String) -> String {
+        "Estimate the macros for this meal. The photo alone wasn't identifiable; " +
+        "the user describes it as: \(description). Use the photo for portion size."
+    }
+
+    /// Structured-output schema enforcing the exact response shape, so the API
+    /// guarantees valid JSON and the unparseable failure mode disappears (EST-03).
+    static let responseSchema: [String: Any] = [
+        "type": "object",
+        "properties": [
+            "identified": ["type": "boolean"],
+            "name": ["type": ["string", "null"]],
+            "kcal": ["type": ["number", "null"]],
+            "protein": ["type": ["number", "null"]],
+            "carbs": ["type": ["number", "null"]],
+            "fat": ["type": ["number", "null"]]
+        ],
+        "required": ["identified", "name", "kcal", "protein", "carbs", "fat"],
+        "additionalProperties": false
+    ]
 }

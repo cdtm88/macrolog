@@ -33,7 +33,7 @@ struct CaptureView: View {
         .onChange(of: cameraObscured) { _, obscured in
             if obscured { camera.stop() } else { camera.resume() }
         }
-        .sheet(isPresented: $model.isShowingText) {
+        .sheet(isPresented: $model.isShowingText, onDismiss: { model.textSheetDismissed() }) {
             TextEntrySheet(model: model)
         }
         .sheet(isPresented: $model.isShowingList) {

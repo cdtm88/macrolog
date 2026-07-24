@@ -16,11 +16,17 @@ struct EstimationService {
         return try await run(content: content)
     }
 
-    func estimate(text: String) async throws -> MacroEstimate {
+    /// Text description, optionally with the photo that couldn't be identified
+    /// on its own — the image still carries portion-size signal (EST-04).
+    func estimate(text: String, image: UIImage? = nil) async throws -> MacroEstimate {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let content: [AnthropicClient.Content] = [
-            .text(EstimationPrompt.textInstruction(trimmed))
-        ]
+        var content: [AnthropicClient.Content] = []
+        if let image, let prepared = ImageProcessing.prepare(image) {
+            content.append(.image(base64: prepared.base64, mediaType: prepared.mediaType))
+            content.append(.text(EstimationPrompt.photoWithTextInstruction(trimmed)))
+        } else {
+            content.append(.text(EstimationPrompt.textInstruction(trimmed)))
+        }
         return try await run(content: content, fallbackName: trimmed)
     }
 
@@ -34,7 +40,8 @@ struct EstimationService {
         let client = AnthropicClient(apiKey: key)
         let raw = try await client.complete(model: EstimationPrompt.primaryModel,
                                             system: EstimationPrompt.system,
-                                            content: content)
+                                            content: content,
+                                            outputSchema: EstimationPrompt.responseSchema)
         return try Self.decode(raw, fallbackName: fallbackName)
     }
 
@@ -42,13 +49,16 @@ struct EstimationService {
     /// isn't the expected four-number shape is surfaced as an error rather than
     /// written as zeros or partial data (EST-03).
     static func decode(_ raw: String, fallbackName: String?) throws -> MacroEstimate {
-        guard let jsonData = extractJSON(from: raw) else {
-            throw EstimationError.unparseable
-        }
+        // Structured output is plain JSON; the brace scanner remains as a
+        // fallback for fenced or prose-wrapped responses.
+        let jsonData = Data(raw.utf8)
         let response: EstimationResponse
-        do {
-            response = try JSONDecoder().decode(EstimationResponse.self, from: jsonData)
-        } catch {
+        if let direct = try? JSONDecoder().decode(EstimationResponse.self, from: jsonData) {
+            response = direct
+        } else if let extracted = extractJSON(from: raw),
+                  let recovered = try? JSONDecoder().decode(EstimationResponse.self, from: extracted) {
+            response = recovered
+        } else {
             throw EstimationError.unparseable
         }
 

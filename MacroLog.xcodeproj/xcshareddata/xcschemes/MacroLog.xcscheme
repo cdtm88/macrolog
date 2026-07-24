@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "2660"
-   version = "1.7">
+   version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES">
@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "000000000000000000000049"
+               BlueprintIdentifier = "C791F0C9FA37C0E6015585B3"
                BuildableName = "MacroLog.app"
                BlueprintName = "MacroLog"
                ReferencedContainer = "container:MacroLog.xcodeproj">
@@ -26,8 +26,29 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "YES"
-      shouldAutocreateTestPlan = "YES">
+      shouldUseLaunchSchemeArgsEnv = "YES">
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "C791F0C9FA37C0E6015585B3"
+            BuildableName = "MacroLog.app"
+            BlueprintName = "MacroLog"
+            ReferencedContainer = "container:MacroLog.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
+      <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "C1D497F372BC73612D60353B"
+               BuildableName = "MacroLogTests.xctest"
+               BlueprintName = "MacroLogTests"
+               ReferencedContainer = "container:MacroLog.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -43,7 +64,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "000000000000000000000049"
+            BlueprintIdentifier = "C791F0C9FA37C0E6015585B3"
             BuildableName = "MacroLog.app"
             BlueprintName = "MacroLog"
             ReferencedContainer = "container:MacroLog.xcodeproj">
@@ -60,7 +81,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "000000000000000000000049"
+            BlueprintIdentifier = "C791F0C9FA37C0E6015585B3"
             BuildableName = "MacroLog.app"
             BlueprintName = "MacroLog"
             ReferencedContainer = "container:MacroLog.xcodeproj">
