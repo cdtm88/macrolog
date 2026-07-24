@@ -10,6 +10,11 @@ struct CaptureView: View {
     @State private var libraryItem: PhotosPickerItem?
     @State private var isCapturing = false
 
+    /// True whenever the viewfinder is covered by the text sheet or review screen.
+    private var cameraObscured: Bool {
+        model.isShowingText || model.reviewEntry != nil
+    }
+
     var body: some View {
         ZStack {
             Theme.groupedBackground.ignoresSafeArea()
@@ -23,10 +28,13 @@ struct CaptureView: View {
         }
         .onAppear { camera.configureAndStart() }
         .onDisappear { camera.stop() }
+        // Pause the live feed while it's hidden behind the text sheet or the
+        // review cover — no reason to hold the camera while typing/reviewing.
+        .onChange(of: cameraObscured) { _, obscured in
+            if obscured { camera.stop() } else { camera.resume() }
+        }
         .sheet(isPresented: $model.isShowingText) {
             TextEntrySheet(model: model)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $model.isShowingList) {
             TodayListView(model: model)
@@ -285,7 +293,7 @@ struct CaptureView: View {
                     Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("In Health. Whoop's got it.")
+                    Text("Logged")
                         .font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
                     Text(toast)
                         .font(.system(size: 12)).foregroundStyle(.white.opacity(0.6))

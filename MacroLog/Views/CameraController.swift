@@ -66,6 +66,15 @@ final class CameraController: NSObject, ObservableObject {
         }
     }
 
+    /// Restarts a previously configured session after `stop()`. No-op if the
+    /// session was never configured (e.g. camera denied/unavailable).
+    func resume() {
+        sessionQueue.async { [weak self] in
+            guard let self, !self.session.isRunning, !self.session.inputs.isEmpty else { return }
+            self.session.startRunning()
+        }
+    }
+
     /// Captures a photo and returns it upright-oriented, or nil on failure.
     func capturePhoto() async -> UIImage? {
         await withCheckedContinuation { continuation in
