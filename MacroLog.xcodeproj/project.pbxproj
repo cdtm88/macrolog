@@ -20,6 +20,7 @@
 		2BE5B9FCA05468F184001C1D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BE839DA34B1259E9DEFCEDFC /* Assets.xcassets */; };
 		2E6770AD64A8C9E690CCA5E1 /* EntryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0251D21F4CCE9B3D216E182 /* EntryStoreTests.swift */; };
 		31F25495E5F0C78CBB980F20 /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B73D3502ABFA5E639B6879 /* CameraPreview.swift */; };
+		372065682FC9ED3A0DB0A4F6 /* RetainedTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39D2699AFB3E929399B9755F /* RetainedTextTests.swift */; };
 		3CD995DF3F832F6AC4C9C86A /* ResponseSchemaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA3668A4F5448B715E5F4D3 /* ResponseSchemaTests.swift */; };
 		415A723B5B460397F9621D5C /* UnsupportedDeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6734299AD6EA1B1C6781C447 /* UnsupportedDeviceView.swift */; };
 		4163FA2DBB30E0843D3CC100 /* EstimationDecodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 291F99C261B85C30F5BAB5CC /* EstimationDecodeTests.swift */; };
@@ -91,6 +92,7 @@
 		291F99C261B85C30F5BAB5CC /* EstimationDecodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EstimationDecodeTests.swift; sourceTree = "<group>"; };
 		2B8EF2FEED0FEDDFF95215FA /* TodaySnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaySnapshotTests.swift; sourceTree = "<group>"; };
 		386CA559D7944B56A787CEC1 /* AnthropicClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicClient.swift; sourceTree = "<group>"; };
+		39D2699AFB3E929399B9755F /* RetainedTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetainedTextTests.swift; sourceTree = "<group>"; };
 		43378B8BDB5BC7795481D846 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
 		445F8C234526F0F01A60B5D0 /* MacroLogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MacroLogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		48EA90502FA2CB67A7BAFC40 /* MacroLogWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroLogWidgetBundle.swift; sourceTree = "<group>"; };
@@ -287,6 +289,7 @@
 				DFC797A2FC0723BE3A08A0F5 /* FavoriteTests.swift */,
 				E00BCEF72289AE51112847B6 /* PortionScalingTests.swift */,
 				FEA3668A4F5448B715E5F4D3 /* ResponseSchemaTests.swift */,
+				39D2699AFB3E929399B9755F /* RetainedTextTests.swift */,
 				2B8EF2FEED0FEDDFF95215FA /* TodaySnapshotTests.swift */,
 			);
 			path = MacroLogTests;
@@ -446,6 +449,7 @@
 				8DB14862D33177A5D1962295 /* FavoriteTests.swift in Sources */,
 				8CB7CEAD915D16AE022A95AA /* PortionScalingTests.swift in Sources */,
 				3CD995DF3F832F6AC4C9C86A /* ResponseSchemaTests.swift in Sources */,
+				372065682FC9ED3A0DB0A4F6 /* RetainedTextTests.swift in Sources */,
 				D0753D6488B24B353E5DD6B8 /* TodaySnapshotTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

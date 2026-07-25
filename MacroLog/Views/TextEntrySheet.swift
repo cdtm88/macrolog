@@ -90,7 +90,15 @@ struct TextEntrySheet: View {
         .presentationDetents([.height(contentHeight)])
         .presentationBackground(Theme.groupedBackground)
         .presentationCornerRadius(28)
-        .onAppear { focused = true }
+        .onAppear {
+            // A repeat "couldn't identify" reopens this sheet — reseed the
+            // user's description so it never has to be retyped (CAP-05).
+            // A fresh text entry still starts empty.
+            if model.needsTextAfterPhoto, let retained = model.lastText {
+                text = retained
+            }
+            focused = true
+        }
         .sheet(isPresented: $isManagingFavorites) {
             FavoritesView()
         }

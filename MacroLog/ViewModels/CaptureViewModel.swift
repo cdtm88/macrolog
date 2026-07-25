@@ -57,16 +57,20 @@ final class CaptureViewModel {
     var healthState: HealthState = .ok
 
     // Retained input so a failed estimate can be retried without re-capture
-    // (EST-05). Not persisted — cleared once consumed (SEC-03).
+    // (EST-05). Not persisted — cleared once consumed (SEC-03). `lastText` is
+    // readable so a repeat "couldn't identify" reseeds the text sheet with the
+    // user's description instead of forcing a retype (CAP-05).
     private var lastImage: UIImage?
-    private var lastText: String?
+    private(set) var lastText: String?
 
     private let context: ModelContext
     private let store: EntryStore
     private let estimator = EstimationService()
     private let health = HealthKitService()
 
-    private var workTask: Task<Void, Never>?
+    // Readable (not private) so tests can cancel it and drive the
+    // estimation-outcome handlers deterministically without network.
+    private(set) var workTask: Task<Void, Never>?
     private var toastTask: Task<Void, Never>?
     private var longRunTask: Task<Void, Never>?
 
@@ -223,7 +227,13 @@ final class CaptureViewModel {
         }
     }
 
-    private func handleEstimate(_ estimate: MacroEstimate, capturedAt: Date) {
+    // Internal (not private) so tests can drive estimation outcomes without
+    // touching the network.
+    func handleEstimate(_ estimate: MacroEstimate, capturedAt: Date) {
+        // The description served its purpose — don't let it leak into an
+        // unrelated later text entry. The image stays: review shows it.
+        lastText = nil
+
         // Persist a pending-review entry immediately so it survives termination
         // (CAP-05). Timestamped to capture, not to confirmation (ENT-06/D-11).
         let entry = FoodEntry(name: estimate.name,
@@ -238,7 +248,7 @@ final class CaptureViewModel {
         openReview(for: entry, editingExisting: false)
     }
 
-    private func handleEstimationError(_ error: EstimationError) {
+    func handleEstimationError(_ error: EstimationError) {
         captureState = .idle
         switch error {
         case .couldNotIdentify:
@@ -353,6 +363,7 @@ final class CaptureViewModel {
             entry.healthWriteFailures = 0
             try? context.save()
 
+            lastText = nil // the retained description can't outlive its entry
             showToast(entry.macroSummary)
             closeReviewToCapture()
             store.refreshTodaySnapshot()
