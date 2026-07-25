@@ -31,7 +31,7 @@ A single-purpose, single-user iOS app: photo or text description of a meal in, m
 - **Estimation model:** Sonnet by default, Opus as a fallback only if estimate quality proves inadequate in practice.
 - **API key** lives in a gitignored config file — never commit it, and never add read-only telemetry/logging that could leak it.
 - Writes exactly four HealthKit types: `dietaryEnergyConsumed`, `dietaryProtein`, `dietaryCarbohydrates`, `dietaryFatTotal` — write-only authorization, no read access requested for any type.
-- **One `HKCorrelation` (type `.food`) per meal**, not per day; the correlation's UUID is persisted locally immediately after a successful write so edits/deletes can reconcile the Health sample.
+- **One `HKCorrelation` (type `.food`) per meal**, not per day. Every Health object (the correlation and its four quantity samples) is tagged with the local entry's ID in metadata, and edits/deletes reconcile by deleting everything carrying that tag before rewriting (D-08, ENT-02/03) — no correlation UUID is stored locally and no Health read access is needed. Do not reintroduce a persisted `healthCorrelationID`.
 - **Entries are timestamped at capture time, not at review-confirmation time** — review-before-write means a meal captured before midnight but confirmed after must still land on the capture day.
 - Deleting a local entry deletes its Health sample; editing deletes-and-rewrites so exactly one correlation exists per entry.
 - **Fail loudly, never guess silently:** connectivity failures, API failures, and unidentifiable photos each surface a distinct, explicit error state with the input preserved for retry — never a silent partial/zero write.
