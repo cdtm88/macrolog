@@ -33,10 +33,13 @@ struct CaptureView: View {
         .onChange(of: cameraObscured) { _, obscured in
             if obscured { camera.stop() } else { camera.resume() }
         }
-        .sheet(isPresented: $model.isShowingText, onDismiss: { model.textSheetDismissed() }) {
+        .sheet(isPresented: $model.isShowingText, onDismiss: {
+            model.textSheetDismissed()
+            model.sheetDidDismiss()
+        }) {
             TextEntrySheet(model: model)
         }
-        .sheet(isPresented: $model.isShowingList) {
+        .sheet(isPresented: $model.isShowingList, onDismiss: { model.sheetDidDismiss() }) {
             TodayListView(model: model)
         }
         // Item-based presentation: the cover's content is unconditional, so the
@@ -64,7 +67,7 @@ struct CaptureView: View {
     private var topBar: some View {
         HStack {
             Text("MacroLog")
-                .font(.system(size: 20, weight: .heavy))
+                .font(.system(.title3, weight: .heavy))
                 .foregroundStyle(Theme.ink)
             Spacer()
             Button { model.isShowingList = true } label: { todayPill }
@@ -86,7 +89,7 @@ struct CaptureView: View {
                     .foregroundStyle(Theme.secondary)
                 HStack(spacing: 2) {
                     Text("\(Int(totals.kcal.rounded()))")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(.subheadline, weight: .bold))
                         .foregroundStyle(Theme.ink)
                     Text("kcal")
                         .font(.system(size: 10, weight: .semibold))
@@ -150,7 +153,7 @@ struct CaptureView: View {
             HStack(spacing: 7) {
                 Circle().fill(dot).frame(width: 6, height: 6)
                 Text(text)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(.footnote, weight: .semibold))
                     .foregroundStyle(.white)
             }
             .padding(.horizontal, 15)
@@ -168,7 +171,7 @@ struct CaptureView: View {
                 HStack(spacing: 9) {
                     ProgressView().tint(.white)
                     Text(model.isTakingLong ? "Still working…" : "Reading the plate…")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(.footnote, weight: .semibold))
                         .foregroundStyle(.white)
                 }
                 .padding(.horizontal, 16)
@@ -195,13 +198,13 @@ struct CaptureView: View {
                             .tracking(0.5)
                             .foregroundStyle(Color(hex: 0x30A14E))
                         Text("\(entry.name) · \(Int(entry.kcal.rounded())) kcal")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(.subheadline, weight: .semibold))
                             .foregroundStyle(Theme.ink)
                             .lineLimit(1)
                     }
                     Spacer()
                     Text("Review ›")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(.footnote, weight: .bold))
                         .foregroundStyle(Theme.accent)
                 }
                 .padding(14)
@@ -219,7 +222,7 @@ struct CaptureView: View {
         HStack {
             Button { model.isShowingText = true } label: {
                 controlChip { VStack(spacing: 2) {
-                    Text("Aa").font(.system(size: 18, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text("Aa").font(.system(.body, weight: .heavy)).foregroundStyle(Theme.ink)
                     Text("TYPE").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.secondary)
                 } }
             }
@@ -241,7 +244,7 @@ struct CaptureView: View {
 
             PhotosPicker(selection: $libraryItem, matching: .images) {
                 controlChip { VStack(spacing: 3) {
-                    Image(systemName: "photo").font(.system(size: 18)).foregroundStyle(Theme.ink)
+                    Image(systemName: "photo").font(.system(.body)).foregroundStyle(Theme.ink)
                     Text("LIBRARY").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.secondary)
                 } }
             }
@@ -290,13 +293,13 @@ struct CaptureView: View {
             HStack(spacing: 11) {
                 ZStack {
                     Circle().fill(Theme.success).frame(width: 26, height: 26)
-                    Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
+                    Image(systemName: "checkmark").font(.system(.caption, weight: .bold)).foregroundStyle(.white)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Logged")
-                        .font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+                        .font(.system(.subheadline, weight: .bold)).foregroundStyle(.white)
                     Text(toast)
-                        .font(.system(size: 12)).foregroundStyle(.white.opacity(0.6))
+                        .font(.system(.caption)).foregroundStyle(.white.opacity(0.6))
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)

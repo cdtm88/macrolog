@@ -27,7 +27,7 @@ struct FavoritesView: View {
                     if favorites.count < Favorite.maxCount {
                         Button { isAddingNew = true } label: {
                             Label("Add favourite", systemImage: "plus.circle.fill")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.system(.subheadline, weight: .semibold))
                                 .foregroundStyle(Theme.accent)
                         }
                     }
@@ -57,7 +57,7 @@ struct FavoritesView: View {
     private func row(_ favorite: Favorite) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(favorite.name)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(.callout, weight: .semibold))
                 .foregroundStyle(Theme.ink)
             HStack(spacing: 12) {
                 Text("\(Int(favorite.kcal.rounded())) kcal").foregroundStyle(Theme.secondary)
@@ -65,7 +65,7 @@ struct FavoritesView: View {
                 Text("\(Int(favorite.carbs.rounded()))C").foregroundStyle(Theme.carbs)
                 Text("\(Int(favorite.fat.rounded()))F").foregroundStyle(Theme.fat)
             }
-            .font(.system(size: 12, weight: .medium))
+            .font(.system(.caption, weight: .medium))
         }
         .padding(.vertical, 2)
     }

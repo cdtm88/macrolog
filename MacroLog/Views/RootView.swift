@@ -19,6 +19,9 @@ struct RootView: View {
                 }
             }
         }
+        // Fonts scale with the system text size; cap at the first accessibility
+        // size so the compact card/chip layouts stay usable.
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .task { await model.onLaunch() }
         // Day-boundary maintenance must also run when the app foregrounds
         // across midnight without a cold launch (ENT-04, WID-02).
@@ -38,7 +41,7 @@ struct RootView: View {
         HStack(spacing: 10) {
             Image(systemName: "heart.text.square").foregroundStyle(.orange)
             Text("Health write access is off. Meals can't reach Whoop until you enable it in Settings.")
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(.footnote, weight: .medium))
                 .foregroundStyle(Theme.ink)
             Spacer(minLength: 0)
             Button("Settings") {
@@ -46,7 +49,7 @@ struct RootView: View {
                     UIApplication.shared.open(url)
                 }
             }
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(.footnote, weight: .semibold))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

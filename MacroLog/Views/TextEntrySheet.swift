@@ -24,7 +24,7 @@ struct TextEntrySheet: View {
                         .fill(Theme.accent.opacity(0.12))
                         .frame(width: 38, height: 38)
                     Image(systemName: model.needsTextAfterPhoto ? "camera.metering.unknown" : "square.and.pencil")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.callout, weight: .semibold))
                         .foregroundStyle(Theme.accent)
                 }
                 VStack(alignment: .leading, spacing: 2) {
@@ -35,24 +35,24 @@ struct TextEntrySheet: View {
                             Text("Describe it instead")
                         }
                     }
-                    .font(.system(size: 19, weight: .heavy))
+                    .font(.system(.title3, weight: .heavy))
                     .foregroundStyle(Theme.ink)
 
                     Group {
                         if model.needsTextAfterPhoto {
                             Text("Describe it and we'll estimate from your words.")
                         } else {
-                            Text("Say what you ate. Include the oil and butter — it counts.")
+                            Text("Say what you ate — oils and sauces count.")
                         }
                     }
-                    .font(.system(size: 13))
+                    .font(.system(.footnote))
                     .foregroundStyle(Theme.secondary)
                 }
                 Spacer(minLength: 0)
             }
 
             TextField("Chicken curry, rice, naan…", text: $text, axis: .vertical)
-                .font(.system(size: 17))
+                .font(.system(.body))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(3...6)
                 .focused($focused)
@@ -70,9 +70,9 @@ struct TextEntrySheet: View {
             Button(action: submit) {
                 HStack(spacing: 7) {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(.subheadline, weight: .semibold))
                     Text("Estimate it")
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.system(.body, weight: .bold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -104,19 +104,19 @@ struct TextEntrySheet: View {
         if favorites.isEmpty {
             Button { isManagingFavorites = true } label: {
                 Label("Add favourites for one-tap logging", systemImage: "star")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(.footnote, weight: .medium))
                     .foregroundStyle(Theme.secondary)
             }
         } else {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("FAVOURITES")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(.caption2, weight: .bold))
                         .tracking(0.6)
                         .foregroundStyle(Theme.secondary)
                     Spacer()
                     Button("Edit") { isManagingFavorites = true }
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(.caption, weight: .semibold))
                         .foregroundStyle(Theme.accent)
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -136,11 +136,11 @@ struct TextEntrySheet: View {
         } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text(favorite.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                 Text("\(Int(favorite.kcal.rounded())) kcal")
-                    .font(.system(size: 11))
+                    .font(.system(.caption2))
                     .foregroundStyle(Theme.secondary)
             }
             .padding(.horizontal, 12)

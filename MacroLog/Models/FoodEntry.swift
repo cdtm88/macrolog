@@ -28,13 +28,12 @@ final class FoodEntry {
     /// Raw value of `EntryStatus`.
     var statusRaw: String
 
-    /// UUID of the HKCorrelation once written, so the sample can later be
-    /// deleted or replaced (HK-04, ENT-02, ENT-03). Nil until a successful
-    /// write.
-    var healthCorrelationID: UUID?
-
     /// Count of consecutive failed Health writes, used to escalate to a
     /// "check Health permissions" path after two failures (HK-08).
+    ///
+    /// Note: Health reconciliation (HK-04, ENT-02/03) keys off this entry's
+    /// `id`, tagged into every Health sample's metadata — see
+    /// `HealthKitService` — so no correlation UUID needs to be stored here.
     var healthWriteFailures: Int
 
     init(id: UUID = UUID(),
@@ -50,7 +49,6 @@ final class FoodEntry {
         self.fat = macros.fat
         self.capturedAt = capturedAt
         self.statusRaw = status.rawValue
-        self.healthCorrelationID = nil
         self.healthWriteFailures = 0
     }
 

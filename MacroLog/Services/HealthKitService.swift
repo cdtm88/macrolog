@@ -79,9 +79,9 @@ final class HealthKitService {
 
     /// Writes one HKCorrelation of type `.food` containing the four quantity
     /// samples, timestamped to `capturedAt`, with the description as metadata
-    /// (HK-02, HK-03, ENT-06). Returns the correlation UUID to persist (HK-04).
-    @discardableResult
-    func write(entryID: UUID, name: String, macros: Macros, capturedAt: Date) async throws -> UUID {
+    /// (HK-02, HK-03, ENT-06). Reconciliation keys off the entry-ID metadata
+    /// tag, so nothing needs to be returned (HK-04).
+    func write(entryID: UUID, name: String, macros: Macros, capturedAt: Date) async throws {
         guard isAvailable else { throw HealthKitError.unavailable }
         guard !isDenied else { throw HealthKitError.authorizationDenied }
 
@@ -113,7 +113,6 @@ final class HealthKitService {
         } catch {
             throw HealthKitError.writeFailed(error.localizedDescription)
         }
-        return correlation.uuid
     }
 
     // MARK: - Delete / replace
@@ -135,9 +134,8 @@ final class HealthKitService {
     /// Replaces an entry's Health record: delete the existing correlation and
     /// samples, then write fresh ones, leaving exactly one correlation for the
     /// entry (ENT-03).
-    @discardableResult
-    func replace(entryID: UUID, name: String, macros: Macros, capturedAt: Date) async throws -> UUID {
+    func replace(entryID: UUID, name: String, macros: Macros, capturedAt: Date) async throws {
         try await delete(entryID: entryID)
-        return try await write(entryID: entryID, name: name, macros: macros, capturedAt: capturedAt)
+        try await write(entryID: entryID, name: name, macros: macros, capturedAt: capturedAt)
     }
 }

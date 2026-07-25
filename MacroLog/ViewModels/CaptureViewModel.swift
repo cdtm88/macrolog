@@ -40,6 +40,11 @@ final class CaptureViewModel {
     var estimationError: EstimationError?
     var healthError: HealthKitError?
     var toast: String?
+
+    /// True while a Health write is in flight. Guards the confirm button
+    /// against double-taps racing two replace() calls into duplicate
+    /// correlations (ENT-03).
+    var isWriting = false
     var isTakingLong = false            // PERF-03: >20s still-working hint
     var needsTextAfterPhoto = false     // EST-04 prompt
 
@@ -149,6 +154,12 @@ final class CaptureViewModel {
     /// Logs a preconfigured favourite: no AI estimate, straight to review with
     /// the preset values (review-before-write still applies, REV-01).
     func submitFavorite(name: String, macros: Macros) {
+        // Supersede any estimate in flight so it can't land on top of the
+        // favourite's review and clobber the pending entry.
+        workTask?.cancel()
+        finishLongRunTimer()
+        estimationError = nil
+        needsTextAfterPhoto = false
         lastImage = nil
         lastText = nil
         let entry = FoodEntry(name: name,
@@ -237,22 +248,33 @@ final class CaptureViewModel {
 
     // MARK: - Review
 
+    /// Review request waiting for an open sheet to finish dismissing; presented
+    /// from the sheet's `onDismiss` so sequencing is deterministic rather than
+    /// timer-based.
+    private var deferredReview: (entry: FoodEntry, editingExisting: Bool)?
+
     func openReview(for entry: FoodEntry, editingExisting: Bool) {
         // The review cover, the list sheet, and the text sheet all present from
         // the same view, and UIKit allows only one presentation at a time —
         // showing review while a sheet is up (list edit, or an estimate landing
         // with a sheet open) intermittently breaks the cover's layout. Dismiss
-        // any open sheet first and wait out its animation before presenting.
+        // any open sheet first; the sheet's onDismiss presents the review once
+        // the dismissal has actually completed.
         if isShowingList || isShowingText {
+            deferredReview = (entry, editingExisting)
             isShowingList = false
             isShowingText = false
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(500))
-                presentReview(for: entry, editingExisting: editingExisting)
-            }
         } else {
             presentReview(for: entry, editingExisting: editingExisting)
         }
+    }
+
+    /// Hooked to every sheet's `onDismiss`: presents a review that was waiting
+    /// for the sheet to finish dismissing.
+    func sheetDidDismiss() {
+        guard let deferred = deferredReview else { return }
+        deferredReview = nil
+        presentReview(for: deferred.entry, editingExisting: deferred.editingExisting)
     }
 
     private func presentReview(for entry: FoodEntry, editingExisting: Bool) {
@@ -288,8 +310,18 @@ final class CaptureViewModel {
                               fat: max(0, (base.fat * factor).rounded()))
     }
 
+    /// Steps the capture time onto the five-minute grid: 10:13 steps down to
+    /// 10:10, 10:05, … and up to 10:15, 10:20, … Only the sign of `minutes`
+    /// matters; once on the grid each step is a full five minutes.
     func adjustTime(_ entry: FoodEntry, byMinutes minutes: Int) {
-        entry.capturedAt = entry.capturedAt.addingTimeInterval(Double(minutes) * 60)
+        let grid: TimeInterval = 5 * 60
+        let t = entry.capturedAt.timeIntervalSinceReferenceDate
+        let down = (t / grid).rounded(.down) * grid
+        let up = (t / grid).rounded(.up) * grid
+        let snapped = minutes < 0
+            ? (t == down ? down - grid : down)
+            : (t == up ? up + grid : up)
+        entry.capturedAt = Date(timeIntervalSinceReferenceDate: snapped)
     }
 
     /// Confirms the estimate and writes to Apple Health. No write happens until
@@ -299,16 +331,18 @@ final class CaptureViewModel {
     }
 
     private func confirmAsync(_ entry: FoodEntry) async {
+        guard !isWriting else { return } // a write for this tap is already in flight
         guard healthState != .unavailable else {
             healthError = .unavailable
             return
         }
+        isWriting = true
+        defer { isWriting = false }
         do {
-            let uuid = try await health.replace(entryID: entry.id,
-                                                name: entry.name,
-                                                macros: entry.macros,
-                                                capturedAt: entry.capturedAt)
-            entry.healthCorrelationID = uuid
+            try await health.replace(entryID: entry.id,
+                                     name: entry.name,
+                                     macros: entry.macros,
+                                     capturedAt: entry.capturedAt)
             entry.status = .written
             entry.healthWriteFailures = 0
             try? context.save()

@@ -44,7 +44,7 @@ struct TodayListView: View {
                 if entries.isEmpty {
                     Section {
                         Text("Nothing logged yet today.")
-                            .font(.system(size: 15))
+                            .font(.system(.subheadline))
                             .foregroundStyle(Theme.secondary)
                     }
                 } else {
@@ -71,11 +71,11 @@ struct TodayListView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(entry.name)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(.callout, weight: .semibold))
                         .foregroundStyle(Theme.ink)
                     Spacer()
                     Text(entry.capturedAt, format: .dateTime.hour().minute())
-                        .font(.system(size: 13))
+                        .font(.system(.footnote))
                         .foregroundStyle(Theme.secondary)
                         .monospacedDigit()
                 }
@@ -90,7 +90,7 @@ struct TodayListView: View {
                         model.retryWrite(entry)
                     } label: {
                         Label("Not in Health — retry", systemImage: "exclamationmark.arrow.circlepath")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(.caption, weight: .semibold))
                             .foregroundStyle(.orange)
                     }
                     .buttonStyle(.plain)
@@ -104,16 +104,16 @@ struct TodayListView: View {
 
     private func macroTag(_ text: String, _ color: Color) -> some View {
         Text(text)
-            .font(.system(size: 12, weight: .medium))
+            .font(.system(.caption, weight: .medium))
             .foregroundStyle(color)
     }
 
     private func totalRow(_ label: String, _ value: Double, _ color: Color) -> some View {
         HStack(spacing: 8) {
             RoundedRectangle(cornerRadius: 3).fill(color).frame(width: 9, height: 9)
-            Text(label).font(.system(size: 13, weight: .medium)).foregroundStyle(Color(hex: 0x3A3A3C))
+            Text(label).font(.system(.footnote, weight: .medium)).foregroundStyle(Color(hex: 0x3A3A3C))
             Spacer()
-            Text("\(Int(value.rounded()))g").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.ink)
+            Text("\(Int(value.rounded()))g").font(.system(.footnote, weight: .bold)).foregroundStyle(Theme.ink)
         }
     }
 
