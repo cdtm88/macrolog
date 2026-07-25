@@ -3,8 +3,8 @@ import Foundation
 import SwiftData
 @testable import MacroLog
 
-/// The review screen's portion scaling — all four macros scale together,
-/// rounded to whole numbers, never below zero.
+/// The review screen's portion multiplier — absolute against the estimate the
+/// review opened with, never compounding: 1× always restores the original.
 @MainActor
 struct PortionScalingTests {
 
@@ -20,22 +20,36 @@ struct PortionScalingTests {
                               macros: Macros(kcal: 850, protein: 40, carbs: 94, fat: 33),
                               capturedAt: Date())
         container.mainContext.insert(entry)
+        // Opening review freezes the portion baseline at the AI's numbers.
+        model.openReview(for: entry, editingExisting: false)
         return (model, entry, container)
     }
 
     @Test func halvingScalesAllFourAndRounds() throws {
         let (model, entry, container) = try makeModel()
         withExtendedLifetime(container) {
-            model.scale(entry, by: 0.5)
+            model.setPortion(entry, factor: 0.5)
             #expect(entry.macros == Macros(kcal: 425, protein: 20, carbs: 47, fat: 17))
         }
     }
 
-    @Test func doublingScalesAllFour() throws {
+    @Test func factorsDoNotCompound() throws {
         let (model, entry, container) = try makeModel()
         withExtendedLifetime(container) {
-            model.scale(entry, by: 2)
+            model.setPortion(entry, factor: 0.5)
+            model.setPortion(entry, factor: 2)
+            // 2× of the ORIGINAL, not 2× of the halved values.
             #expect(entry.macros == Macros(kcal: 1700, protein: 80, carbs: 188, fat: 66))
+        }
+    }
+
+    @Test func factorOneRestoresOriginalEstimate() throws {
+        let (model, entry, container) = try makeModel()
+        withExtendedLifetime(container) {
+            model.setPortion(entry, factor: 0.5)
+            model.setPortion(entry, factor: 1)
+            #expect(entry.macros == Macros(kcal: 850, protein: 40, carbs: 94, fat: 33))
+            #expect(model.portionFactor == 1)
         }
     }
 

@@ -6,8 +6,10 @@ import SwiftData
 /// be identified (EST-04).
 struct TextEntrySheet: View {
     @Bindable var model: CaptureViewModel
+    @Query(sort: \Favorite.sortOrder) private var favorites: [Favorite]
     @State private var text = ""
     @State private var contentHeight: CGFloat = 280
+    @State private var isManagingFavorites = false
     @FocusState private var focused: Bool
 
     private var canSubmit: Bool {
@@ -63,6 +65,8 @@ struct TextEntrySheet: View {
                 .submitLabel(.go)
                 .onSubmit(submit)
 
+            favoritesSection
+
             Button(action: submit) {
                 HStack(spacing: 7) {
                     Image(systemName: "sparkles")
@@ -87,6 +91,62 @@ struct TextEntrySheet: View {
         .presentationBackground(Theme.groupedBackground)
         .presentationCornerRadius(28)
         .onAppear { focused = true }
+        .sheet(isPresented: $isManagingFavorites) {
+            FavoritesView()
+        }
+    }
+
+    // MARK: - Favourites
+
+    /// One-tap chips for preconfigured meals — straight to review with the
+    /// preset values, no AI estimate.
+    @ViewBuilder private var favoritesSection: some View {
+        if favorites.isEmpty {
+            Button { isManagingFavorites = true } label: {
+                Label("Add favourites for one-tap logging", systemImage: "star")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Theme.secondary)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("FAVOURITES")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.6)
+                        .foregroundStyle(Theme.secondary)
+                    Spacer()
+                    Button("Edit") { isManagingFavorites = true }
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.accent)
+                }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(favorites) { favorite in
+                            favoriteChip(favorite)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func favoriteChip(_ favorite: Favorite) -> some View {
+        Button {
+            model.submitFavorite(name: favorite.name, macros: favorite.macros)
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(favorite.name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                Text("\(Int(favorite.kcal.rounded())) kcal")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
+        }
     }
 
     private func submit() {
@@ -97,7 +157,7 @@ struct TextEntrySheet: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: FoodEntry.self,
+        for: FoodEntry.self, Favorite.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     return Color.clear.sheet(isPresented: .constant(true)) {
         TextEntrySheet(model: CaptureViewModel(context: container.mainContext))

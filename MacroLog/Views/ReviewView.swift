@@ -136,19 +136,18 @@ struct ReviewView: View {
         }
     }
 
-    /// One-tap scaling of all four macros for portion adjustments —
-    /// "ate half of it" without stepper marathons.
+    /// One-tap portion multiplier applied against the original estimate —
+    /// absolute, not compounding, so 1× restores the AI's numbers.
     private var portionCard: some View {
         HStack {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Portion").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
-                Text("Scales all four numbers").font(.system(size: 11)).foregroundStyle(Theme.secondary)
+                Text("1× is the original estimate").font(.system(size: 11)).foregroundStyle(Theme.secondary)
             }
             Spacer(minLength: 8)
             HStack(spacing: 7) {
                 portionChip("½×", factor: 0.5)
-                portionChip("¾×", factor: 0.75)
-                portionChip("1½×", factor: 1.5)
+                portionChip("1×", factor: 1)
                 portionChip("2×", factor: 2)
             }
         }
@@ -158,18 +157,19 @@ struct ReviewView: View {
     }
 
     private func portionChip(_ label: String, factor: Double) -> some View {
-        Button {
-            withAnimation(.easeOut(duration: 0.15)) { model.scale(entry, by: factor) }
+        let selected = model.portionFactor == factor
+        return Button {
+            withAnimation(.easeOut(duration: 0.15)) { model.setPortion(entry, factor: factor) }
         } label: {
             Text(label)
                 .font(.system(size: 13, weight: .bold))
                 .monospacedDigit()
-                .foregroundStyle(Theme.accent)
-                .padding(.horizontal, 10)
+                .foregroundStyle(selected ? .white : Theme.accent)
+                .padding(.horizontal, 12)
                 .padding(.vertical, 7)
-                .background(Theme.groupedBackground, in: Capsule())
+                .background(selected ? Theme.accent : Theme.groupedBackground, in: Capsule())
         }
-        .accessibilityLabel("Scale portion by \(label)")
+        .accessibilityLabel("Set portion to \(label)")
     }
 
     private var stepperCard: some View {

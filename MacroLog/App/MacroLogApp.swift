@@ -8,7 +8,7 @@ struct MacroLogApp: App {
 
     init() {
         do {
-            container = try ModelContainer(for: FoodEntry.self)
+            container = try ModelContainer(for: FoodEntry.self, Favorite.self)
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }

@@ -13,6 +13,7 @@
 		0F331ABBB8F309FCA1B453F3 /* TodaySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4EC310CFB1DDE40F9EF4332 /* TodaySnapshot.swift */; };
 		0F49BB6D4E084DB7793F07FA /* MacroLogWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D185101C1CA38ED22C46FFC3 /* MacroLogWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		157C86B8FC0A3922538CDD39 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C33359132B607DA21AB965 /* ReviewView.swift */; };
+		195AB28382330941FAC76FE5 /* Favorite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92AC7C28767580A8E158B793 /* Favorite.swift */; };
 		2419E4FF1A3BAFA950E70E4B /* MacroLogWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48EA90502FA2CB67A7BAFC40 /* MacroLogWidgetBundle.swift */; };
 		256FCE4857579F9C00095B3A /* EstimationError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72CF7657B330D4E17254FB5 /* EstimationError.swift */; };
 		269EA090FB747ADC33578F89 /* MacroLogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBA408AFDEC25635D1BA60F9 /* MacroLogApp.swift */; };
@@ -27,7 +28,9 @@
 		6A1FB878CCA11CAD447976B9 /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43378B8BDB5BC7795481D846 /* CameraController.swift */; };
 		752A3B1006EA94D73C7F7CF4 /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB39A307E80FBC03BE42AB6C /* CaptureView.swift */; };
 		86A95E7853FB8D76DB8051ED /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82B3E4E4F91BB821B8727E9F /* Theme.swift */; };
+		8BB1A253073002422F71610B /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2041FBFE8D5482FE244932EF /* FavoritesView.swift */; };
 		8CB7CEAD915D16AE022A95AA /* PortionScalingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00BCEF72289AE51112847B6 /* PortionScalingTests.swift */; };
+		8DB14862D33177A5D1962295 /* FavoriteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFC797A2FC0723BE3A08A0F5 /* FavoriteTests.swift */; };
 		9C987255A419A19FC64C438E /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D66F5233FE54B71812598A77 /* HealthKitService.swift */; };
 		AF4F6665E1F7D3351CE1C9AC /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589EFAC55A6DC03043D8B8E1 /* RootView.swift */; };
 		B1BA41017A8B548507A4706B /* MacroEstimate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5911E36453C9662D75D32A4 /* MacroEstimate.swift */; };
@@ -80,6 +83,7 @@
 
 /* Begin PBXFileReference section */
 		0BEC065CAB3E2D91D246C1BA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2041FBFE8D5482FE244932EF /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
 		2105F8DD0C36C2290C64312B /* TextEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEntrySheet.swift; sourceTree = "<group>"; };
 		224D7D87291A5DA073D506A2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		291F99C261B85C30F5BAB5CC /* EstimationDecodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EstimationDecodeTests.swift; sourceTree = "<group>"; };
@@ -99,6 +103,7 @@
 		8D24F0779DD950A6639B8806 /* Secrets.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.example.xcconfig; sourceTree = "<group>"; };
 		8E0910455BE84A57129FC8EF /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		913EFE8DFECB6709B6CEA687 /* TodayWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayWidget.swift; sourceTree = "<group>"; };
+		92AC7C28767580A8E158B793 /* Favorite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Favorite.swift; sourceTree = "<group>"; };
 		99A420F371BC6CAF6A689C07 /* FoodEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEntry.swift; sourceTree = "<group>"; };
 		A5911E36453C9662D75D32A4 /* MacroEstimate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroEstimate.swift; sourceTree = "<group>"; };
 		AB33CFBEE860C4428756B677 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -117,6 +122,7 @@
 		D4EC310CFB1DDE40F9EF4332 /* TodaySnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaySnapshot.swift; sourceTree = "<group>"; };
 		D66F5233FE54B71812598A77 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		DA069664E7D0EE0BDBAEB9D1 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
+		DFC797A2FC0723BE3A08A0F5 /* FavoriteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteTests.swift; sourceTree = "<group>"; };
 		E00BCEF72289AE51112847B6 /* PortionScalingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortionScalingTests.swift; sourceTree = "<group>"; };
 		E0251D21F4CCE9B3D216E182 /* EntryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryStoreTests.swift; sourceTree = "<group>"; };
 		E2ACCC5C6767D89807D07BB8 /* EstimationPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EstimationPrompt.swift; sourceTree = "<group>"; };
@@ -156,6 +162,7 @@
 				43378B8BDB5BC7795481D846 /* CameraController.swift */,
 				C9B73D3502ABFA5E639B6879 /* CameraPreview.swift */,
 				BB39A307E80FBC03BE42AB6C /* CaptureView.swift */,
+				2041FBFE8D5482FE244932EF /* FavoritesView.swift */,
 				C9C33359132B607DA21AB965 /* ReviewView.swift */,
 				589EFAC55A6DC03043D8B8E1 /* RootView.swift */,
 				2105F8DD0C36C2290C64312B /* TextEntrySheet.swift */,
@@ -205,6 +212,7 @@
 			isa = PBXGroup;
 			children = (
 				CC697C4455FADFB14FF1094F /* EntryStatus.swift */,
+				92AC7C28767580A8E158B793 /* Favorite.swift */,
 				99A420F371BC6CAF6A689C07 /* FoodEntry.swift */,
 				A5911E36453C9662D75D32A4 /* MacroEstimate.swift */,
 			);
@@ -271,6 +279,7 @@
 			children = (
 				E0251D21F4CCE9B3D216E182 /* EntryStoreTests.swift */,
 				291F99C261B85C30F5BAB5CC /* EstimationDecodeTests.swift */,
+				DFC797A2FC0723BE3A08A0F5 /* FavoriteTests.swift */,
 				E00BCEF72289AE51112847B6 /* PortionScalingTests.swift */,
 				2B8EF2FEED0FEDDFF95215FA /* TodaySnapshotTests.swift */,
 			);
@@ -427,6 +436,7 @@
 			files = (
 				2E6770AD64A8C9E690CCA5E1 /* EntryStoreTests.swift in Sources */,
 				4163FA2DBB30E0843D3CC100 /* EstimationDecodeTests.swift in Sources */,
+				8DB14862D33177A5D1962295 /* FavoriteTests.swift in Sources */,
 				8CB7CEAD915D16AE022A95AA /* PortionScalingTests.swift in Sources */,
 				D0753D6488B24B353E5DD6B8 /* TodaySnapshotTests.swift in Sources */,
 			);
@@ -446,6 +456,8 @@
 				256FCE4857579F9C00095B3A /* EstimationError.swift in Sources */,
 				47A5974D6362C123344860EB /* EstimationPrompt.swift in Sources */,
 				C3934119A0E47C3161EF5641 /* EstimationService.swift in Sources */,
+				195AB28382330941FAC76FE5 /* Favorite.swift in Sources */,
+				8BB1A253073002422F71610B /* FavoritesView.swift in Sources */,
 				CA0DBCF2472E4FCD68A06F1F /* FoodEntry.swift in Sources */,
 				9C987255A419A19FC64C438E /* HealthKitService.swift in Sources */,
 				D2EB4C2330877590ABD9725F /* ImageProcessing.swift in Sources */,

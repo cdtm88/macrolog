@@ -27,6 +27,12 @@ final class CaptureViewModel {
     var reviewImage: UIImage?
     private var isEditingExisting = false
 
+    /// Portion multiplier currently applied on the review screen, and the
+    /// numbers it multiplies — frozen when review opens so factors don't
+    /// compound (1× restores the original estimate).
+    var portionFactor: Double = 1
+    private var portionBaseline: Macros?
+
     // Pending estimate awaiting review, surfaced on the capture view (REV-03).
     var pendingEntry: FoodEntry?
 
@@ -140,6 +146,22 @@ final class CaptureViewModel {
         }
     }
 
+    /// Logs a preconfigured favourite: no AI estimate, straight to review with
+    /// the preset values (review-before-write still applies, REV-01).
+    func submitFavorite(name: String, macros: Macros) {
+        lastImage = nil
+        lastText = nil
+        let entry = FoodEntry(name: name,
+                              macros: macros,
+                              capturedAt: Date(),
+                              status: .pendingReview)
+        context.insert(entry)
+        try? context.save()
+        pendingEntry = entry
+        captureState = .ready
+        openReview(for: entry, editingExisting: false)
+    }
+
     /// Clears the photo-fallback prompt when the text sheet is dismissed
     /// without submitting, so a later manual text entry starts clean.
     func textSheetDismissed() {
@@ -236,6 +258,8 @@ final class CaptureViewModel {
     private func presentReview(for entry: FoodEntry, editingExisting: Bool) {
         isEditingExisting = editingExisting
         reviewImage = editingExisting ? nil : lastImage
+        portionBaseline = entry.macros
+        portionFactor = 1
         reviewEntry = entry   // item-based presentation: setting this shows review
     }
 
@@ -252,15 +276,16 @@ final class CaptureViewModel {
         entry.macros = macros
     }
 
-    /// Scales all four macros at once — "I ate half" without forty stepper taps
-    /// (REV-02 convenience).
-    func scale(_ entry: FoodEntry, by factor: Double) {
-        var macros = entry.macros
-        macros.kcal = max(0, (macros.kcal * factor).rounded())
-        macros.protein = max(0, (macros.protein * factor).rounded())
-        macros.carbs = max(0, (macros.carbs * factor).rounded())
-        macros.fat = max(0, (macros.fat * factor).rounded())
-        entry.macros = macros
+    /// Applies an absolute portion multiplier against the numbers the review
+    /// opened with — non-compounding, so 1× always restores the original
+    /// estimate (REV-02 convenience).
+    func setPortion(_ entry: FoodEntry, factor: Double) {
+        guard let base = portionBaseline else { return }
+        portionFactor = factor
+        entry.macros = Macros(kcal: max(0, (base.kcal * factor).rounded()),
+                              protein: max(0, (base.protein * factor).rounded()),
+                              carbs: max(0, (base.carbs * factor).rounded()),
+                              fat: max(0, (base.fat * factor).rounded()))
     }
 
     func adjustTime(_ entry: FoodEntry, byMinutes minutes: Int) {
