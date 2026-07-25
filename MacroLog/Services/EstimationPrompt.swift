@@ -54,17 +54,25 @@ enum EstimationPrompt {
 
     /// Structured-output schema enforcing the exact response shape, so the API
     /// guarantees valid JSON and the unparseable failure mode disappears (EST-03).
+    ///
+    /// Nullable fields use `anyOf` — the documented structured-outputs subset
+    /// supports basic types plus enum/const/anyOf/allOf/$ref, not type-union
+    /// arrays like `["string", "null"]`.
     static let responseSchema: [String: Any] = [
         "type": "object",
         "properties": [
             "identified": ["type": "boolean"],
-            "name": ["type": ["string", "null"]],
-            "kcal": ["type": ["number", "null"]],
-            "protein": ["type": ["number", "null"]],
-            "carbs": ["type": ["number", "null"]],
-            "fat": ["type": ["number", "null"]]
+            "name": nullable("string"),
+            "kcal": nullable("number"),
+            "protein": nullable("number"),
+            "carbs": nullable("number"),
+            "fat": nullable("number")
         ],
         "required": ["identified", "name", "kcal", "protein", "carbs", "fat"],
         "additionalProperties": false
     ]
+
+    private static func nullable(_ type: String) -> [String: Any] {
+        ["anyOf": [["type": type], ["type": "null"]]]
+    }
 }
