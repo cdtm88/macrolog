@@ -27,11 +27,16 @@ final class CaptureViewModel {
     var reviewImage: UIImage?
     private var isEditingExisting = false
 
-    /// Portion multiplier currently applied on the review screen, and the
-    /// numbers it multiplies — frozen when review opens so factors don't
-    /// compound (1× restores the original estimate).
+    /// Portion multiplier currently applied on the review screen.
     var portionFactor: Double = 1
-    private var portionBaseline: Macros?
+
+    /// The values the entry had when review opened. Serves two jobs: the
+    /// portion multiplier scales against it (so factors don't compound), and
+    /// discarding an *edit* of an existing entry restores it — steppers mutate
+    /// the autosaving SwiftData model in place, so without a restore "Discard"
+    /// would silently keep the edits while Health still holds the old values
+    /// (D-08: local and Health must never diverge).
+    private var reviewBaseline: (macros: Macros, capturedAt: Date)?
 
     // Pending estimate awaiting review, surfaced on the capture view (REV-03).
     var pendingEntry: FoodEntry?
@@ -280,7 +285,7 @@ final class CaptureViewModel {
     private func presentReview(for entry: FoodEntry, editingExisting: Bool) {
         isEditingExisting = editingExisting
         reviewImage = editingExisting ? nil : lastImage
-        portionBaseline = entry.macros
+        reviewBaseline = (entry.macros, entry.capturedAt)
         portionFactor = 1
         reviewEntry = entry   // item-based presentation: setting this shows review
     }
@@ -302,7 +307,7 @@ final class CaptureViewModel {
     /// opened with — non-compounding, so 1× always restores the original
     /// estimate (REV-02 convenience).
     func setPortion(_ entry: FoodEntry, factor: Double) {
-        guard let base = portionBaseline else { return }
+        guard let base = reviewBaseline?.macros else { return }
         portionFactor = factor
         entry.macros = Macros(kcal: max(0, (base.kcal * factor).rounded()),
                               protein: max(0, (base.protein * factor).rounded()),
@@ -330,7 +335,8 @@ final class CaptureViewModel {
         Task { await confirmAsync(entry) }
     }
 
-    private func confirmAsync(_ entry: FoodEntry) async {
+    // Internal (not private) so tests can await the full confirm path.
+    func confirmAsync(_ entry: FoodEntry) async {
         guard !isWriting else { return } // a write for this tap is already in flight
         guard healthState != .unavailable else {
             healthError = .unavailable
@@ -365,10 +371,21 @@ final class CaptureViewModel {
         }
     }
 
-    /// Discards the estimate at review: writes nothing to Health and removes the
-    /// pending entry (REV-04).
+    /// Discards at review (REV-04). A *new* pending entry is deleted outright.
+    /// An *existing* entry being edited is restored to the values review opened
+    /// with — the steppers mutate the autosaving model in place, so without
+    /// this restore the local copy would silently diverge from the Health
+    /// sample (D-08) while the button claims nothing changed.
     func discard(_ entry: FoodEntry) {
-        if !isEditingExisting {
+        if isEditingExisting {
+            if let baseline = reviewBaseline {
+                entry.macros = baseline.macros
+                entry.capturedAt = baseline.capturedAt
+                try? context.save()
+                // Totals shown on capture/list/widget included the edits.
+                store.refreshTodaySnapshot()
+            }
+        } else {
             context.delete(entry)
             try? context.save()
             if pendingEntry?.id == entry.id { pendingEntry = nil }
@@ -379,6 +396,7 @@ final class CaptureViewModel {
     private func closeReviewToCapture() {
         reviewEntry = nil
         reviewImage = nil
+        reviewBaseline = nil
         if !isEditingExisting { pendingEntry = nil; captureState = .idle }
         isEditingExisting = false
     }
