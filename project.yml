@@ -6,6 +6,7 @@
 
 name: MacroLog
 options:
+  xcodeVersion: "26.6"
   bundleIdPrefix: com.macrolog
   deploymentTarget:
     iOS: "18.0"
