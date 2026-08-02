@@ -119,10 +119,15 @@ final class CaptureViewModel {
 
     /// Foreground drain for both outbound queues (MAC-06, HB-01/05). Detached
     /// fire-and-forget: nothing here can block or delay the UI (HB-11).
+    /// The confirmed-meal flag gates only the weight bridge's *first* sync,
+    /// so its read-permission prompt lands after the app has proven itself
+    /// rather than back-to-back with the nutrition prompt at first launch
+    /// (HB-08).
     private func kickBridges() {
         Task { [coachRelay] in await coachRelay.kick() }
+        let hasConfirmedMeal = !store.todaysConfirmedEntries().isEmpty
         Task { [weightBridge] in
-            await weightBridge.syncOnForeground { [weak self] notice in
+            await weightBridge.syncOnForeground(hasConfirmedMeal: hasConfirmedMeal) { [weak self] notice in
                 Task { @MainActor in self?.showBridgeNotice(notice) }
             }
         }

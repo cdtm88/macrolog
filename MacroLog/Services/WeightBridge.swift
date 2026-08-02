@@ -134,14 +134,27 @@ actor WeightBridge {
 
     // MARK: - Foreground sync
 
+    /// HB-08 gate, pure for testability: the read-permission prompt must
+    /// arrive in context, not at first launch. HB-12 forbids any weight UI,
+    /// so the only context this app has is proven use — the first-ever sync
+    /// (the one that asks) waits until at least one meal has been confirmed.
+    /// Once asked, every foreground syncs regardless: the local store purges
+    /// written entries daily, so mornings legitimately start with none.
+    static func shouldSync(authRequested: Bool, hasConfirmedMeal: Bool) -> Bool {
+        authRequested || hasConfirmedMeal
+    }
+
     /// The whole cycle: authorize (once, in context), read the delta, requeue
     /// changed days, drain. `onNotice` delivers the single HB-09 hint — the
     /// only thing this bridge ever says to the user.
-    func syncOnForeground(onNotice: @escaping @Sendable (String) -> Void) async {
+    func syncOnForeground(hasConfirmedMeal: Bool,
+                          onNotice: @escaping @Sendable (String) -> Void) async {
         guard config != nil, HKHealthStore.isHealthDataAvailable(), !syncing else { return }
+        loadIfNeeded()
+        guard Self.shouldSync(authRequested: state.authRequested,
+                              hasConfirmedMeal: hasConfirmedMeal) else { return }
         syncing = true
         defer { syncing = false }
-        loadIfNeeded()
 
         await requestAuthorizationIfNeeded()
 
@@ -279,6 +292,11 @@ actor WeightBridge {
     func pendingUploads() -> [WeightUpload] {
         loadIfNeeded()
         return state.pending
+    }
+
+    func hasRequestedAuthorization() -> Bool {
+        loadIfNeeded()
+        return state.authRequested
     }
 
     // MARK: - Persistence

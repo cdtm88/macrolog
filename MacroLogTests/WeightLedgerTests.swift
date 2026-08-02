@@ -69,4 +69,34 @@ struct WeightLedgerTests {
         #expect(kept.map(\.date) == ["2026-08-03", "2026-08-04", "2026-08-05"])
         #expect(evicted.map(\.date) == ["2026-08-01", "2026-08-02"])
     }
+
+    // MARK: - First-sync gate (HB-08)
+
+    /// The read prompt must arrive in context — after the app has proven
+    /// itself with a confirmed meal — never at first launch. Once asked,
+    /// every foreground syncs (the store purges written entries daily, so a
+    /// morning legitimately has none).
+    @Test func firstSyncWaitsForAConfirmedMeal() {
+        #expect(!WeightBridge.shouldSync(authRequested: false, hasConfirmedMeal: false))
+        #expect(WeightBridge.shouldSync(authRequested: false, hasConfirmedMeal: true))
+        #expect(WeightBridge.shouldSync(authRequested: true, hasConfirmedMeal: false))
+        #expect(WeightBridge.shouldSync(authRequested: true, hasConfirmedMeal: true))
+    }
+
+    /// Bridge-level: with no confirmed meal and auth never asked, a foreground
+    /// sync returns before touching HealthKit — no prompt, no state change.
+    @Test func syncWithoutConfirmedMealNeverRequestsAuthorization() async {
+        let bridge = WeightBridge(
+            config: .init(athleteID: "i0", apiKey: "k"),
+            session: .shared,
+            stateFile: FileManager.default.temporaryDirectory
+                .appendingPathComponent("gate-test-\(UUID().uuidString).json"),
+            evictionLog: FileManager.default.temporaryDirectory
+                .appendingPathComponent("gate-test-\(UUID().uuidString).log"))
+
+        await bridge.syncOnForeground(hasConfirmedMeal: false) { _ in }
+
+        let asked = await bridge.hasRequestedAuthorization()
+        #expect(!asked)
+    }
 }
