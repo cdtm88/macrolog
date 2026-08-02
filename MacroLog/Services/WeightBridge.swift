@@ -219,13 +219,30 @@ actor WeightBridge {
         }
     }
 
+    /// HB-09 decision, pure for testability: whether to surface the notice
+    /// and the flag's next value. An empty ledger after auth earns exactly
+    /// one notice; seeing samples re-arms the flag, so a later revocation —
+    /// whose silent empty reads drain the ledger via pruning — earns exactly
+    /// one more, once per episode, never a nag.
+    static func emptyHintTransition(authRequested: Bool, hintShown: Bool, ledgerEmpty: Bool)
+        -> (notice: Bool, hintShown: Bool) {
+        guard authRequested else { return (false, hintShown) }
+        guard ledgerEmpty else { return (false, false) }
+        return hintShown ? (false, true) : (true, true)
+    }
+
     /// HealthKit hides read denial behind an empty result (the permission
-    /// trap). If the very first full backfill returns nothing at all, say so
-    /// once — one visible state change, never a nag (HB-09).
+    /// trap). If the ledger is empty when it shouldn't be, say so once per
+    /// episode — one visible state change, never a repeated prompt (HB-09).
     private func surfaceEmptyHintIfWarranted(onNotice: @escaping @Sendable (String) -> Void) {
-        guard state.authRequested, !state.emptyHintShown, state.ledger.samples.isEmpty else { return }
-        state.emptyHintShown = true
-        persist()
+        let (notice, flag) = Self.emptyHintTransition(authRequested: state.authRequested,
+                                                      hintShown: state.emptyHintShown,
+                                                      ledgerEmpty: state.ledger.samples.isEmpty)
+        if flag != state.emptyHintShown {
+            state.emptyHintShown = flag
+            persist()
+        }
+        guard notice else { return }
         onNotice("No weight readable from Health. If you use a smart scale, check MacroLog's read access under Settings › Health.")
     }
 

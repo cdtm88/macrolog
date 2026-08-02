@@ -107,6 +107,36 @@ struct WeightLedgerTests {
         #expect(ledger.apply(added: [], deleted: [prunedAway]).isEmpty)
     }
 
+    // MARK: - Empty-read hint (HB-09)
+
+    /// The notice fires once while the ledger is empty, never repeats within
+    /// the episode, and re-arms after samples have been seen — so a later
+    /// revocation (silent empty reads, ledger eventually drained by pruning)
+    /// earns exactly one more notice.
+    @Test func emptyHintFiresOncePerEmptyEpisode() {
+        // Before auth: never.
+        #expect(WeightBridge.emptyHintTransition(authRequested: false, hintShown: false, ledgerEmpty: true)
+                == (false, false))
+
+        // First empty sync after auth: fire once, latch.
+        var t = WeightBridge.emptyHintTransition(authRequested: true, hintShown: false, ledgerEmpty: true)
+        #expect(t == (true, true))
+
+        // Still empty next sync: no repeat.
+        t = WeightBridge.emptyHintTransition(authRequested: true, hintShown: t.hintShown, ledgerEmpty: true)
+        #expect(t == (false, true))
+
+        // Samples seen: silent, but the hint re-arms.
+        t = WeightBridge.emptyHintTransition(authRequested: true, hintShown: t.hintShown, ledgerEmpty: false)
+        #expect(t == (false, false))
+
+        // Empty again (revocation episode): exactly one more notice.
+        t = WeightBridge.emptyHintTransition(authRequested: true, hintShown: t.hintShown, ledgerEmpty: true)
+        #expect(t == (true, true))
+        t = WeightBridge.emptyHintTransition(authRequested: true, hintShown: t.hintShown, ledgerEmpty: true)
+        #expect(t == (false, true))
+    }
+
     // MARK: - First-sync gate (HB-08)
 
     /// The read prompt must arrive in context — after the app has proven
