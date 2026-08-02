@@ -7,9 +7,11 @@ up by Whoop's Journal pre-fill.
 carbs/fat only), D-07 (one HKCorrelation per meal), D-08 (deleting a local entry
 deletes the Health sample).
 
-**Done:** A confirmed meal writes an HKCorrelation to Health; the four values +
+**Done:** A confirmed meal writes an HKCorrelation to Health; the values +
 description appear in the Apple Health app sourced from MacroLog; Whoop's Journal
-pre-fills those values the same day. See README → "Verifying the Whoop pickup"
+pre-fills those values the same day. (Six types are written since fibre & sodium
+were added post-PRD — Whoop still reads only the original four; see
+REQUIREMENTS HK-01.) See README → "Verifying the Whoop pickup"
 for the order-dependent verification procedure.
 
 **Implementation:** `HealthKitService` (write-only auth, per-meal `.food`

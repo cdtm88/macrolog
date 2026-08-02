@@ -17,9 +17,9 @@ criterion, with the phase that owns it and where it lives in the codebase.
 
 | ID | Requirement | Phase | Where |
 |----|-------------|-------|-------|
-| EST-01 | Photo or text returns kcal, protein, carbs, fat as numbers. | 02 | `EstimationService` |
+| EST-01 | Photo or text returns kcal, protein, carbs, fat as numbers. | 02 | `EstimationService` — returns six since fibre & sodium were added (2026-07-31); the original four are unchanged. |
 | EST-02 | Fixed system prompt in a single source constant, not varied per request. | 02 | `EstimationPrompt.system` |
-| EST-03 | Parseable JSON with exactly the four numeric keys; non-parseable → error, never silent zeros. | 02 | `EstimationService.decode` |
+| EST-03 | Parseable JSON with exactly the four numeric keys; non-parseable → error, never silent zeros. | 02 | `EstimationService.decode` — six keys since fibre & sodium (2026-07-31); shape is enforced by a structured-output schema (`EstimationPrompt.responseSchema`) rather than prompt-only JSON. Never silent zeros. |
 | EST-04 | Unidentifiable photo prompts for text rather than guessing. | 02 | `.couldNotIdentify` → text sheet |
 | EST-05 | No network → explicit connectivity error + manual retry; input preserved. | 02 | `EstimationError.noConnectivity`, `retryLast` |
 | EST-06 | Prompt accounts for oils/butter/sauces; single point estimate. | 02 | `EstimationPrompt.system` |
@@ -31,7 +31,7 @@ criterion, with the phase that owns it and where it lives in the codebase.
 | ID | Requirement | Phase | Where |
 |----|-------------|-------|-------|
 | REV-01 | No Health write until the user explicitly confirms. | 02 | `ReviewView` confirm bar |
-| REV-02 | All four macros individually editable before confirmation. | 02 | `ReviewView` steppers |
+| REV-02 | All four macros individually editable before confirmation. | 02 | `ReviewView` steppers — six since fibre & sodium (2026-07-31), plus a ½×/1×/2× portion multiplier that scales all six against the opening estimate. |
 | REV-03 | Pending estimate visible from capture without navigating away. | 04 | ready pill in `CaptureView` |
 | REV-04 | Discarding writes nothing and removes the pending entry. | 03 | `CaptureViewModel.discard` |
 
@@ -52,7 +52,7 @@ criterion, with the phase that owns it and where it lives in the codebase.
 
 | ID | Requirement | Phase | Where |
 |----|-------------|-------|-------|
-| ENT-01 | Today's confirmed entries listed with description, time, four macros. | 03 | `TodayListView` |
+| ENT-01 | Today's confirmed entries listed with description, time, four macros. | 03 | `TodayListView` — still the four Whoop macros by design; fibre & sodium are captured and written to Health but deliberately kept off the glanceable surfaces. |
 | ENT-02 | Deleting an entry deletes its HKCorrelation. | 03 | `HealthKitService.delete` |
 | ENT-03 | Editing deletes and rewrites, leaving exactly one correlation. | 03 | `HealthKitService.replace` |
 | ENT-04 | Yesterday's written entries purged locally; pending/unwritten never purged. | 03 | `EntryStore.purgeOldWrittenEntries` |
@@ -65,7 +65,7 @@ criterion, with the phase that owns it and where it lives in the codebase.
 
 | ID | Requirement | Phase | Where |
 |----|-------------|-------|-------|
-| WID-01 | Home Screen widget shows today's four totals. | 05 | `TodayWidgetView` |
+| WID-01 | Home Screen widget shows today's four totals. | 05 | `TodayWidgetView` — four by design (see ENT-01); follows the system light/dark appearance even though the app is light-only. |
 | WID-02 | Reflects a new entry within 60s without reopening. | 05 | `WidgetCenter.reloadAllTimelines` |
 | WID-03 | Tapping opens the app into capture. | 05 | `widgetURL` + `onOpenURL` |
 | WID-04 | No entries → zero values, not empty/error. | 05 | `TodaySnapshotStore.read` |

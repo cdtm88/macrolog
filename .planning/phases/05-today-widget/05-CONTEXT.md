@@ -7,7 +7,9 @@ logging prompt.
 
 **Provisional:** revise after the adherence checkpoint.
 
-**Done:** A Home Screen widget shows today's four totals, updates within 60s of a
+**Done:** A Home Screen widget shows today's four totals (four by design — fibre
+and sodium are written to Health but kept off the glanceable surface; see
+REQUIREMENTS WID-01), updates within 60s of a
 new entry without reopening, shows zeros before the first meal, and opens capture
 when tapped.
 

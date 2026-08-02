@@ -6,7 +6,9 @@ can auto-populate its nutrition entries. Meal in, macros to Health — nothing
 else.
 
 Built to the attached PRD (GSD framework) and prototype. Native SwiftUI, iOS 18+,
-HealthKit, SwiftData, WidgetKit, direct Anthropic API calls (no backend).
+HealthKit, SwiftData, WidgetKit. No server component: the app calls the Anthropic
+API directly for estimation and — post-PRD, and only when configured — writes
+outbound to a coach ingest endpoint and intervals.icu (see *Outbound bridges*).
 
 ---
 
@@ -28,7 +30,7 @@ MacroLogWidget/      Home Screen widget showing today's totals
 MacroLogShared/      Code shared by app + widget (Macros, App-Group snapshot)
 MacroLogTests/       Unit tests (Swift Testing) — decode, day rules, portions,
                      bridge queues and failure handling
-docs/                PRD (source of truth for scope), bridge spec, prototype
+docs/                PRD (source of truth for scope), bridge spec, prototype, logo/
 .planning/           Requirements matrix, roadmap, backlog, per-phase context
 project.yml          XcodeGen spec — canonical project definition
 Scripts/             App-icon generator
@@ -96,18 +98,22 @@ xcodebuild test -project MacroLog.xcodeproj -scheme MacroLog \
 - **Favourites** (configured via Edit in the text sheet, up to 6): preset meals
   with known macros shown as chips under the text box — one tap goes straight
   to review with the preset values, no AI call.
-- **Review** is mandatory: every macro and the timestamp are editable before
-  anything is written — steppers repeat while held, a ½×/1×/2× portion
-  multiplier scales all four numbers against the original estimate, and the
-  time snaps to the five-minute grid. "Log to Health" writes one
-  `HKCorrelation` of type `.food`, timestamped to capture time (so a late
-  dinner confirmed after midnight lands on the right day).
+- **Review** is mandatory: all six values (calories, protein, carbs, fat, fibre,
+  sodium) and the timestamp are editable before anything is written — steppers
+  repeat while held, a ½×/1×/2× portion multiplier scales every value against
+  the original estimate, and the time snaps to the five-minute grid. "Log to
+  Health" writes one `HKCorrelation` of type `.food`, timestamped to capture
+  time (so a late dinner confirmed after midnight lands on the right day).
 - **Today** (tap the ring pill) lists today's meals; edit or delete, both
   reconciling the Health sample. Yesterday's written entries are purged locally
   — Whoop is the history view.
 - The **widget** shows today's running calories/protein/carbs/fat and opens
   capture when tapped. It follows the system appearance (light and dark) even
   though the app itself is light-only.
+
+Fibre and sodium are captured, editable, and written to Health, but stay off the
+glanceable surfaces — the Today list and the widget show the four macros Whoop
+actually reads.
 
 ### Outbound bridges (post-PRD, `docs/macrolog-bridge.md`)
 
@@ -135,8 +141,9 @@ This is the top risk. Follow the order exactly — the pre-fill is order-depende
 1. Confirm today's Whoop Journal has **not** already been saved (else the
    pre-fill prompt won't reappear until tomorrow).
 2. Log a meal from MacroLog.
-3. Open Apple Health → confirm the four values + description, sourced from
-   MacroLog.
+3. Open Apple Health → confirm the written values + description, sourced from
+   MacroLog. Six types are written; Whoop reads only protein, carbohydrate,
+   fat, and energy.
 4. Open the Whoop Journal, start a new entry, confirm the "data pre-filled via
    Apple Health" banner and matching protein/carbs/fat.
 5. If the banner doesn't appear, check Whoop's Apple Health permissions before
@@ -149,17 +156,19 @@ fallback** if quality proves inadequate. The model ids live in
 `EstimationPrompt.swift` (`primaryModel` / `fallbackModel`) — swap the constant
 to escalate. The prompt is fixed in a single source constant and accounts for
 oils, butter, and sauces. Responses are constrained by a structured-output JSON
-schema, so the four numbers always decode or fail loudly — never silent zeros.
+schema, so the six numbers always decode or fail loudly — never silent zeros.
 When a photo can't be identified, the supplementary text description is sent
 *with* the photo, which still carries portion-size signal.
 
 ## Notes
 
-- The "logos attached" in the request weren't present in the uploads (only the
-  PRD and prototype HTML). The app icon and in-app mark are built from the
-  prototype's own tricolour macro ring (blue protein / orange carbs / purple
-  fat). Drop a real 1024×1024 into `Assets.xcassets/AppIcon.appiconset/` to
-  replace it.
+- **Branding.** No logo files came with the original brief (only the PRD and
+  prototype HTML), so the mark was derived from the prototype's own tricolour
+  macro ring — blue protein, orange carbs, purple fat. The vector set now lives
+  in `docs/logo/` (`macrolog-mark`, plus mono, white, icon, and lockup
+  variants); the app icon is generated separately by `Scripts/make_icon.py`, so
+  changing the SVGs does not regenerate it. To replace the icon, drop a
+  1024×1024 PNG into `MacroLog/Assets.xcassets/AppIcon.appiconset/`.
 - Phases 04 (friction) and 05 (widget) are marked *provisional* in the PRD —
   they're implemented here, but expect to revisit their scope after the
   real-world adherence checkpoint (a week of daily use).
