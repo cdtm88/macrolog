@@ -42,13 +42,16 @@ final class HealthKitService {
     private let proteinType = HKQuantityType(.dietaryProtein)
     private let carbsType = HKQuantityType(.dietaryCarbohydrates)
     private let fatType = HKQuantityType(.dietaryFatTotal)
+    private let fiberType = HKQuantityType(.dietaryFiber)
+    private let sodiumType = HKQuantityType(.dietarySodium)
     private let foodType = HKCorrelationType(.food)
 
     private var quantityTypes: [HKQuantityType] {
-        [energyType, proteinType, carbsType, fatType]
+        [energyType, proteinType, carbsType, fatType, fiberType, sodiumType]
     }
 
-    /// Exactly the four write types the app is allowed to share (HK-01).
+    /// Exactly the six write types the app is allowed to share: the four Whoop
+    /// macros (HK-01) plus fibre and sodium, added post-PRD.
     private var shareTypes: Set<HKSampleType> {
         Set(quantityTypes.map { $0 as HKSampleType }) // correlation is composed of these
     }
@@ -77,7 +80,7 @@ final class HealthKitService {
 
     // MARK: - Write
 
-    /// Writes one HKCorrelation of type `.food` containing the four quantity
+    /// Writes one HKCorrelation of type `.food` containing the six quantity
     /// samples, timestamped to `capturedAt`, with the description as metadata
     /// (HK-02, HK-03, ENT-06). Reconciliation keys off the entry-ID metadata
     /// tag, so nothing needs to be returned (HK-04).
@@ -102,6 +105,12 @@ final class HealthKitService {
                              start: capturedAt, end: capturedAt, metadata: metadata),
             HKQuantitySample(type: fatType,
                              quantity: HKQuantity(unit: .gram(), doubleValue: macros.fat),
+                             start: capturedAt, end: capturedAt, metadata: metadata),
+            HKQuantitySample(type: fiberType,
+                             quantity: HKQuantity(unit: .gram(), doubleValue: macros.fiber),
+                             start: capturedAt, end: capturedAt, metadata: metadata),
+            HKQuantitySample(type: sodiumType,
+                             quantity: HKQuantity(unit: .gramUnit(with: .milli), doubleValue: macros.sodium),
                              start: capturedAt, end: capturedAt, metadata: metadata)
         ]
 
@@ -117,7 +126,7 @@ final class HealthKitService {
 
     // MARK: - Delete / replace
 
-    /// Deletes every Health object tagged with this entry's UUID: the four
+    /// Deletes every Health object tagged with this entry's UUID: the six
     /// quantity samples and the correlation. Completes without error when
     /// nothing matches — e.g. the sample was already removed in the Health app
     /// (ENT-02, ENT-05).

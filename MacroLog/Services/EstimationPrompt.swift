@@ -24,7 +24,8 @@ enum EstimationPrompt {
     - Return a single point estimate, not a range and not a hedged answer. The user \
     reviews and adjusts every number before it is saved, so commit to your best \
     single guess.
-    - Estimate calories (kcal), protein (g), carbohydrate (g), and fat (g).
+    - Estimate calories (kcal), protein (g), carbohydrate (g), fat (g), \
+    dietary fibre (g), and sodium (mg).
     - Give a short, specific name for the meal (e.g. "Chicken tikka masala & rice").
     - If you are shown a photo and genuinely cannot tell what the food is, set \
     "identified" to false and leave the numbers null rather than guessing wildly.
@@ -32,11 +33,12 @@ enum EstimationPrompt {
     Respond with ONLY a JSON object, no prose, no markdown fences, in exactly this \
     shape:
     {"identified": true, "name": "<short name>", "kcal": <number>, "protein": \
-    <grams>, "carbs": <grams>, "fat": <grams>}
+    <grams>, "carbs": <grams>, "fat": <grams>, "fiber": <grams>, "sodium": \
+    <milligrams>}
 
     When you cannot identify the food:
     {"identified": false, "name": null, "kcal": null, "protein": null, "carbs": \
-    null, "fat": null}
+    null, "fat": null, "fiber": null, "sodium": null}
     """
 
     static let photoInstruction = "Estimate the macros for this meal."
@@ -66,9 +68,11 @@ enum EstimationPrompt {
             "kcal": nullable("number"),
             "protein": nullable("number"),
             "carbs": nullable("number"),
-            "fat": nullable("number")
+            "fat": nullable("number"),
+            "fiber": nullable("number"),
+            "sodium": nullable("number")
         ],
-        "required": ["identified", "name", "kcal", "protein", "carbs", "fat"],
+        "required": ["identified", "name", "kcal", "protein", "carbs", "fat", "fiber", "sodium"],
         "additionalProperties": false
     ]
 

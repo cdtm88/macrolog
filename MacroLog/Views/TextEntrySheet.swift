@@ -3,14 +3,24 @@ import SwiftData
 
 /// Bottom sheet for describing a meal in text — an equal-status alternative to
 /// the camera, one tap from capture (CAP-02). Also shown when a photo could not
-/// be identified (EST-04).
+/// be identified (EST-04) and after any estimation failure, with the failed
+/// input retained so the retry carries photo and description together (EST-05).
 struct TextEntrySheet: View {
     @Bindable var model: CaptureViewModel
     @Query(sort: \Favorite.sortOrder) private var favorites: [Favorite]
-    @State private var text = ""
+    @State private var text: String
     @State private var contentHeight: CGFloat = 280
     @State private var isManagingFavorites = false
     @FocusState private var focused: Bool
+
+    init(model: CaptureViewModel) {
+        self.model = model
+        // Seed the retained description at construction, not in onAppear — a
+        // post-presentation state change re-measures the height detent and
+        // makes the sheet visibly load in two steps (CAP-05).
+        let isRetry = model.needsTextAfterPhoto || model.estimationError != nil
+        _text = State(initialValue: isRetry ? (model.lastText ?? "") : "")
+    }
 
     private var canSubmit: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -18,38 +28,7 @@ struct TextEntrySheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Theme.accent.opacity(0.12))
-                        .frame(width: 38, height: 38)
-                    Image(systemName: model.needsTextAfterPhoto ? "camera.metering.unknown" : "square.and.pencil")
-                        .font(.system(.callout, weight: .semibold))
-                        .foregroundStyle(Theme.accent)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Group {
-                        if model.needsTextAfterPhoto {
-                            Text("Couldn't read the plate")
-                        } else {
-                            Text("Describe it instead")
-                        }
-                    }
-                    .font(.system(.title3, weight: .heavy))
-                    .foregroundStyle(Theme.ink)
-
-                    Group {
-                        if model.needsTextAfterPhoto {
-                            Text("Describe it and we'll estimate from your words.")
-                        } else {
-                            Text("Say what you ate — oils and sauces count.")
-                        }
-                    }
-                    .font(.system(.footnote))
-                    .foregroundStyle(Theme.secondary)
-                }
-                Spacer(minLength: 0)
-            }
+            header
 
             TextField("Chicken curry, rice, naan…", text: $text, axis: .vertical)
                 .font(.system(.body))
@@ -69,9 +48,9 @@ struct TextEntrySheet: View {
 
             Button(action: submit) {
                 HStack(spacing: 7) {
-                    Image(systemName: "sparkles")
+                    Image(systemName: failed ? "arrow.clockwise" : "sparkles")
                         .font(.system(.subheadline, weight: .semibold))
-                    Text("Estimate it")
+                    Text(failed ? "Retry estimate" : "Estimate it")
                         .font(.system(.body, weight: .bold))
                 }
                 .foregroundStyle(.white)
@@ -90,18 +69,70 @@ struct TextEntrySheet: View {
         .presentationDetents([.height(contentHeight)])
         .presentationBackground(Theme.groupedBackground)
         .presentationCornerRadius(28)
-        .onAppear {
-            // A repeat "couldn't identify" reopens this sheet — reseed the
-            // user's description so it never has to be retyped (CAP-05).
-            // A fresh text entry still starts empty.
-            if model.needsTextAfterPhoto, let retained = model.lastText {
-                text = retained
-            }
-            focused = true
-        }
+        // Focus immediately so the keyboard rises with the sheet as one motion
+        // rather than a second step after the content lands.
+        .onAppear { focused = true }
         .sheet(isPresented: $isManagingFavorites) {
             FavoritesView()
         }
+    }
+
+    // MARK: - Header
+
+    /// Adapts to why the sheet is up: a fresh text entry, an unidentifiable
+    /// photo, or a failed estimate whose cause is shown with the input kept —
+    /// each failure names itself explicitly (D-10). The thumbnail confirms a
+    /// retained photo will be re-sent with the description.
+    private var header: some View {
+        HStack(spacing: 12) {
+            if model.needsTextAfterPhoto, let photo = model.lastImage {
+                Image(uiImage: photo)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 38, height: 38)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            } else {
+                ZStack {
+                    Circle()
+                        .fill(failed ? Color.orange.opacity(0.14) : Theme.accent.opacity(0.12))
+                        .frame(width: 38, height: 38)
+                    Image(systemName: headerIcon)
+                        .font(.system(.callout, weight: .semibold))
+                        .foregroundStyle(failed ? .orange : Theme.accent)
+                }
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(headerTitle)
+                    .font(.system(.title3, weight: .heavy))
+                    .foregroundStyle(Theme.ink)
+                Text(headerSubtitle)
+                    .font(.system(.footnote))
+                    .foregroundStyle(Theme.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var failed: Bool { model.estimationError != nil }
+
+    private var headerIcon: String {
+        if failed { return "exclamationmark.triangle" }
+        return model.needsTextAfterPhoto ? "camera.metering.unknown" : "square.and.pencil"
+    }
+
+    private var headerTitle: String {
+        if let error = model.estimationError { return error.errorTitle }
+        return model.needsTextAfterPhoto ? "Couldn't read the plate" : "Describe it instead"
+    }
+
+    private var headerSubtitle: String {
+        if let error = model.estimationError {
+            let keep = model.needsTextAfterPhoto ? " Your photo is kept and resent with it." : ""
+            return (error.errorDescription ?? "") + keep
+        }
+        return model.needsTextAfterPhoto
+            ? "Describe it and we'll estimate from your words."
+            : "Say what you ate — oils and sauces count."
     }
 
     // MARK: - Favourites

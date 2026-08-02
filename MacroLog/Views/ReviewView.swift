@@ -19,7 +19,9 @@ struct ReviewView: View {
         Field(label: "Calories", unit: "kcal", keyPath: \.kcal, step: 10),
         Field(label: "Protein", unit: "grams", keyPath: \.protein, step: 1),
         Field(label: "Carbohydrate", unit: "grams", keyPath: \.carbs, step: 1),
-        Field(label: "Fat", unit: "grams", keyPath: \.fat, step: 1)
+        Field(label: "Fat", unit: "grams", keyPath: \.fat, step: 1),
+        Field(label: "Fibre", unit: "grams", keyPath: \.fiber, step: 1),
+        Field(label: "Sodium", unit: "milligrams", keyPath: \.sodium, step: 50)
     ]
 
     var body: some View {

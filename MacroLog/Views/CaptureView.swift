@@ -10,9 +10,17 @@ struct CaptureView: View {
     @State private var libraryItem: PhotosPickerItem?
     @State private var isCapturing = false
 
-    /// True whenever the viewfinder is covered by the text sheet or review screen.
+    /// True while an estimate is in flight — the viewfinder replaces the live
+    /// feed with a static frame (the captured photo, or plain grey for a text
+    /// entry) so the loading state is steady rather than a wobbling camera.
+    private var isWorking: Bool {
+        model.captureState == .working
+    }
+
+    /// True whenever the viewfinder is covered by the text sheet, the review
+    /// screen, or the working state.
     private var cameraObscured: Bool {
-        model.isShowingText || model.reviewEntry != nil
+        model.isShowingText || model.reviewEntry != nil || isWorking
     }
 
     var body: some View {
@@ -48,13 +56,15 @@ struct CaptureView: View {
         .fullScreenCover(item: $model.reviewEntry) { entry in
             ReviewView(model: model, entry: entry)
         }
-        .overlay(alignment: .top) { toast }
-        .alert(item: $model.estimationError) { error in
-            Alert(title: Text(error.errorTitle),
-                  message: Text(error.errorDescription ?? ""),
-                  primaryButton: .default(Text("Retry")) { model.retryLast() },
-                  secondaryButton: .cancel(Text("Dismiss")))
+        .overlay(alignment: .top) {
+            VStack(spacing: 8) {
+                toast
+                bridgeNotice
+            }
         }
+        // Estimation failures surface in the text sheet (with the input
+        // retained) rather than an alert, so the retry carries photo and
+        // description together.
         .alert(item: $model.healthError) { error in
             Alert(title: Text("Health"),
                   message: Text(error.errorDescription ?? ""),
@@ -113,12 +123,12 @@ struct CaptureView: View {
                 .fill(LinearGradient(colors: [Theme.viewfinderTop, Theme.viewfinderBottom],
                                      startPoint: .top, endPoint: .bottom))
 
-            if camera.status == .ready {
+            if camera.status == .ready && !isWorking {
                 CameraPreview(session: camera.session)
                     .clipShape(RoundedRectangle(cornerRadius: 30))
             }
 
-            reticles
+            if !isWorking { reticles }
 
             switch model.captureState {
             case .idle:
@@ -163,21 +173,30 @@ struct CaptureView: View {
         }
     }
 
+    /// While estimating, the viewfinder shows a static frame with a prominent
+    /// centred loading state — the captured photo for a photo submission, or a
+    /// plain grey backdrop for a text entry. Never the live feed wobbling in
+    /// the hand.
     private var workingOverlay: some View {
         ZStack {
-            Color.black.opacity(0.32)
-            VStack {
-                Spacer()
-                HStack(spacing: 9) {
-                    ProgressView().tint(.white)
-                    Text(model.isTakingLong ? "Still working…" : "Reading the plate…")
-                        .font(.system(.footnote, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 9)
-                .background(.black.opacity(0.5), in: Capsule())
-                .padding(.bottom, 26)
+            if let photo = model.lastImage {
+                Color.clear
+                    .overlay {
+                        Image(uiImage: photo)
+                            .resizable()
+                            .scaledToFill()
+                    }
+                Color.black.opacity(0.45)
+            } else {
+                Color(hex: 0x2C2C2E)
+            }
+            VStack(spacing: 16) {
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(.white)
+                Text(model.isTakingLong ? "Still working…" : "Estimating your meal…")
+                    .font(.system(.headline, weight: .bold))
+                    .foregroundStyle(.white)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 30))
@@ -219,14 +238,16 @@ struct CaptureView: View {
     // MARK: - Controls
 
     private var controls: some View {
+        // Type sits on the right — it's the most-used secondary input, and the
+        // right side is the easier thumb reach.
         HStack {
-            Button { model.isShowingText = true } label: {
-                controlChip { VStack(spacing: 2) {
-                    Text("Aa").font(.system(.body, weight: .heavy)).foregroundStyle(Theme.ink)
-                    Text("TYPE").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.secondary)
+            PhotosPicker(selection: $libraryItem, matching: .images) {
+                controlChip { VStack(spacing: 3) {
+                    Image(systemName: "photo").font(.system(.body)).foregroundStyle(Theme.ink)
+                    Text("LIBRARY").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.secondary)
                 } }
             }
-            .accessibilityLabel("Describe a meal in text")
+            .accessibilityLabel("Choose a photo from your library")
 
             Spacer()
 
@@ -242,13 +263,13 @@ struct CaptureView: View {
 
             Spacer()
 
-            PhotosPicker(selection: $libraryItem, matching: .images) {
-                controlChip { VStack(spacing: 3) {
-                    Image(systemName: "photo").font(.system(.body)).foregroundStyle(Theme.ink)
-                    Text("LIBRARY").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.secondary)
+            Button { model.isShowingText = true } label: {
+                controlChip { VStack(spacing: 2) {
+                    Text("Aa").font(.system(.body, weight: .heavy)).foregroundStyle(Theme.ink)
+                    Text("TYPE").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.secondary)
                 } }
             }
-            .accessibilityLabel("Choose a photo from your library")
+            .accessibilityLabel("Describe a meal in text")
         }
         .padding(.horizontal, 30)
         .padding(.top, 22)
@@ -310,6 +331,30 @@ struct CaptureView: View {
             .shadow(color: .black.opacity(0.3), radius: 12, y: 6)
             .padding(.horizontal, 16)
             .padding(.top, 60)
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+
+    /// One-time weight-bridge hint (HB-09) — informational, never an error the
+    /// user must act on to keep logging meals.
+    @ViewBuilder private var bridgeNotice: some View {
+        if let notice = model.bridgeNotice {
+            HStack(spacing: 11) {
+                ZStack {
+                    Circle().fill(Color.orange).frame(width: 26, height: 26)
+                    Image(systemName: "scalemass").font(.system(.caption, weight: .bold)).foregroundStyle(.white)
+                }
+                Text(notice)
+                    .font(.system(.caption, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.85))
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .background(Theme.ink, in: RoundedRectangle(cornerRadius: 18))
+            .shadow(color: .black.opacity(0.3), radius: 12, y: 6)
+            .padding(.horizontal, 16)
+            .padding(.top, model.toast == nil ? 60 : 0)
             .transition(.move(edge: .top).combined(with: .opacity))
         }
     }

@@ -18,6 +18,10 @@ final class FoodEntry {
     var protein: Double
     var carbs: Double
     var fat: Double
+    /// Grams. Defaults keep pre-fibre/sodium stores migrating cleanly.
+    var fiber: Double = 0
+    /// Milligrams.
+    var sodium: Double = 0
 
     /// Moment the meal was captured — photo taken or text submitted — NOT the
     /// moment of review confirmation. This is what the Health sample is
@@ -47,6 +51,8 @@ final class FoodEntry {
         self.protein = macros.protein
         self.carbs = macros.carbs
         self.fat = macros.fat
+        self.fiber = macros.fiber
+        self.sodium = macros.sodium
         self.capturedAt = capturedAt
         self.statusRaw = status.rawValue
         self.healthWriteFailures = 0
@@ -58,12 +64,14 @@ final class FoodEntry {
     }
 
     var macros: Macros {
-        get { Macros(kcal: kcal, protein: protein, carbs: carbs, fat: fat) }
+        get { Macros(kcal: kcal, protein: protein, carbs: carbs, fat: fat, fiber: fiber, sodium: sodium) }
         set {
             kcal = newValue.kcal
             protein = newValue.protein
             carbs = newValue.carbs
             fat = newValue.fat
+            fiber = newValue.fiber
+            sodium = newValue.sodium
         }
     }
 }

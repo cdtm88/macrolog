@@ -40,4 +40,26 @@ struct RetainedTextTests {
             #expect(saved.count == 1)
         }
     }
+
+    /// A non-identification failure (API, connectivity) also reopens the text
+    /// sheet with the description retained, so the retry is an edit rather
+    /// than a retype — and never carries a phantom photo for a text-only
+    /// submission.
+    @Test func apiFailureReopensSheetWithTextRetained() throws {
+        let container = try ModelContainer(
+            for: FoodEntry.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let model = CaptureViewModel(context: container.mainContext)
+
+        withExtendedLifetime(container) {
+            model.submitText("mystery grain bowl")
+            model.workTask?.cancel()
+
+            model.handleEstimationError(.api(status: 500, message: "overloaded"))
+            #expect(model.isShowingText)
+            #expect(model.estimationError == .api(status: 500, message: "overloaded"))
+            #expect(model.lastText == "mystery grain bowl")
+            #expect(!model.needsTextAfterPhoto) // no photo was part of the failure
+        }
+    }
 }

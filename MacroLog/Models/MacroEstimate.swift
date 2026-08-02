@@ -19,4 +19,6 @@ struct EstimationResponse: Decodable {
     let protein: Double?
     let carbs: Double?
     let fat: Double?
+    let fiber: Double?
+    let sodium: Double?
 }

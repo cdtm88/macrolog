@@ -53,14 +53,10 @@ struct TodayWidgetView: View {
         .widgetURL(SharedConstants.captureURL) // tap opens capture (WID-03)
     }
 
+    // The calorie readout lives inside the ring only — no duplicate label.
     private var small: some View {
-        VStack(spacing: 6) {
-            WidgetRing(macros: totals, size: 68, lineWidth: 9)
-            Text("\(Int(totals.kcal.rounded())) kcal")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(W.ink)
-        }
-        .padding(12)
+        WidgetRing(macros: totals, size: 84, lineWidth: 11)
+            .padding(12)
     }
 
     private var medium: some View {
@@ -70,23 +66,26 @@ struct TodayWidgetView: View {
                 Text("TODAY")
                     .font(.system(size: 10, weight: .bold)).tracking(0.6)
                     .foregroundStyle(W.secondary)
-                Text("\(Int(totals.kcal.rounded())) kcal")
-                    .font(.system(size: 20, weight: .heavy))
-                    .foregroundStyle(W.ink)
-                macroLine("Protein", totals.protein, W.protein)
-                macroLine("Carbs", totals.carbs, W.carbs)
-                macroLine("Fat", totals.fat, W.fat)
+                macroLine("Protein", totals.protein, W.protein, percent: totals.proteinPercent)
+                macroLine("Carbs", totals.carbs, W.carbs, percent: totals.carbsPercent)
+                macroLine("Fat", totals.fat, W.fat, percent: totals.fatPercent)
             }
             Spacer(minLength: 0)
         }
         .padding(16)
     }
 
-    private func macroLine(_ label: String, _ value: Double, _ color: Color) -> some View {
+    private func macroLine(_ label: String, _ value: Double, _ color: Color,
+                           percent: Int?) -> some View {
         HStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 7, height: 7)
             Text(label).font(.system(size: 11, weight: .medium)).foregroundStyle(W.secondary)
             Spacer()
+            if let percent {
+                Text("\(percent)%")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(W.secondary)
+            }
             Text("\(Int(value.rounded()))g").font(.system(size: 11, weight: .bold)).foregroundStyle(W.ink)
         }
     }
@@ -113,10 +112,16 @@ struct WidgetRing: View {
                     .stroke(arc.2, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                     .rotationEffect(.degrees(-90))
             }
-            Text("\(Int(macros.kcal.rounded()))")
-                .font(.system(size: size * 0.24, weight: .heavy))
-                .foregroundStyle(W.ink)
-                .minimumScaleFactor(0.6)
+            VStack(spacing: 0) {
+                Text("\(Int(macros.kcal.rounded()))")
+                    .font(.system(size: size * 0.24, weight: .heavy))
+                    .foregroundStyle(W.ink)
+                    .minimumScaleFactor(0.6)
+                Text("KCAL")
+                    .font(.system(size: size * 0.09, weight: .bold))
+                    .tracking(0.8)
+                    .foregroundStyle(W.secondary)
+            }
         }
         .frame(width: size, height: size)
     }

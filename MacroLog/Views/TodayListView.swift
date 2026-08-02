@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// Today's confirmed entries with description, time, and the four macros
-/// (ENT-01). Tap to edit, swipe to delete — both reconcile the Health sample.
+/// Today's confirmed entries with description, time, and macros (ENT-01).
+/// Tap to edit, swipe to delete — both reconcile the Health sample.
 /// Unwritten entries surface a retry (HK-06).
 struct TodayListView: View {
     @Bindable var model: CaptureViewModel
@@ -31,9 +31,11 @@ struct TodayListView: View {
                     HStack(spacing: 20) {
                         MacroRing(macros: totals, size: 92, lineWidth: 12, showCenter: true)
                         VStack(alignment: .leading, spacing: 8) {
-                            totalRow("Protein", totals.protein, Theme.protein)
-                            totalRow("Carbs", totals.carbs, Theme.carbs)
-                            totalRow("Fat", totals.fat, Theme.fat)
+                            totalRow("Protein", totals.protein, unit: "g", Theme.protein, percent: totals.proteinPercent)
+                            totalRow("Carbs", totals.carbs, unit: "g", Theme.carbs, percent: totals.carbsPercent)
+                            totalRow("Fat", totals.fat, unit: "g", Theme.fat, percent: totals.fatPercent)
+                            totalRow("Fibre", totals.fiber, unit: "g", Theme.secondary)
+                            totalRow("Sodium", totals.sodium, unit: "mg", Theme.secondary)
                         }
                         Spacer(minLength: 0)
                     }
@@ -108,12 +110,24 @@ struct TodayListView: View {
             .foregroundStyle(color)
     }
 
-    private func totalRow(_ label: String, _ value: Double, _ color: Color) -> some View {
+    /// `percent` is the macro's share of today's calories (4/4/9 weighting) —
+    /// shown only for the three calorie-bearing macros.
+    private func totalRow(_ label: String, _ value: Double, unit: String,
+                          _ color: Color, percent: Int? = nil) -> some View {
         HStack(spacing: 8) {
             RoundedRectangle(cornerRadius: 3).fill(color).frame(width: 9, height: 9)
             Text(label).font(.system(.footnote, weight: .medium)).foregroundStyle(Color(hex: 0x3A3A3C))
             Spacer()
-            Text("\(Int(value.rounded()))g").font(.system(.footnote, weight: .bold)).foregroundStyle(Theme.ink)
+            if let percent {
+                Text("\(percent)%")
+                    .font(.system(.caption2, weight: .semibold))
+                    .foregroundStyle(Theme.secondary)
+                    .monospacedDigit()
+            }
+            Text("\(Int(value.rounded()))\(unit)")
+                .font(.system(.footnote, weight: .bold))
+                .foregroundStyle(Theme.ink)
+                .monospacedDigit()
         }
     }
 

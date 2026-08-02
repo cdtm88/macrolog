@@ -46,7 +46,7 @@ struct EstimationService {
     }
 
     /// Strictly decodes the model output into a `MacroEstimate`. Anything that
-    /// isn't the expected four-number shape is surfaced as an error rather than
+    /// isn't the expected six-number shape is surfaced as an error rather than
     /// written as zeros or partial data (EST-03).
     static func decode(_ raw: String, fallbackName: String?) throws -> MacroEstimate {
         // Structured output is plain JSON; the brace scanner remains as a
@@ -68,7 +68,9 @@ struct EstimationService {
               let kcal = response.kcal,
               let protein = response.protein,
               let carbs = response.carbs,
-              let fat = response.fat else {
+              let fat = response.fat,
+              let fiber = response.fiber,
+              let sodium = response.sodium else {
             if response.identified { throw EstimationError.unparseable }
             throw EstimationError.couldNotIdentify
         }
@@ -83,7 +85,9 @@ struct EstimationService {
             macros: Macros(kcal: kcal.rounded(),
                            protein: protein.rounded(),
                            carbs: carbs.rounded(),
-                           fat: fat.rounded())
+                           fat: fat.rounded(),
+                           fiber: fiber.rounded(),
+                           sodium: sodium.rounded())
         )
     }
 

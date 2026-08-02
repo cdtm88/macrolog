@@ -98,6 +98,8 @@ private struct FavoriteEditor: View {
     @State private var protein: Double?
     @State private var carbs: Double?
     @State private var fat: Double?
+    @State private var fiber: Double?
+    @State private var sodium: Double?
 
     init(favorite: Favorite?, nextSortOrder: Int = 0) {
         self.favorite = favorite
@@ -107,6 +109,8 @@ private struct FavoriteEditor: View {
         _protein = State(initialValue: favorite?.protein)
         _carbs = State(initialValue: favorite?.carbs)
         _fat = State(initialValue: favorite?.fat)
+        _fiber = State(initialValue: favorite?.fiber)
+        _sodium = State(initialValue: favorite?.sodium)
     }
 
     private var canSave: Bool {
@@ -124,6 +128,8 @@ private struct FavoriteEditor: View {
                     numberRow("Protein", unit: "g", value: $protein)
                     numberRow("Carbs", unit: "g", value: $carbs)
                     numberRow("Fat", unit: "g", value: $fat)
+                    numberRow("Fibre", unit: "g", value: $fiber)
+                    numberRow("Sodium", unit: "mg", value: $sodium)
                 }
             }
             .navigationTitle(favorite == nil ? "New favourite" : "Edit favourite")
@@ -157,7 +163,9 @@ private struct FavoriteEditor: View {
         let macros = Macros(kcal: kcal ?? 0,
                             protein: protein ?? 0,
                             carbs: carbs ?? 0,
-                            fat: fat ?? 0)
+                            fat: fat ?? 0,
+                            fiber: fiber ?? 0,
+                            sodium: sodium ?? 0)
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         if let favorite {
             favorite.name = trimmed

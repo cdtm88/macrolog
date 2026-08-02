@@ -38,8 +38,18 @@
 	<string>MacroLog lets you pick a meal photo from your library to estimate its macros.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>MacroLog writes the calories, protein, carbohydrate, and fat of your meals to Apple Health so Whoop can read them.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>MacroLog reads your weight from Apple Health to sync it to intervals.icu for training metrics. It reads nothing else.</string>
 	<key>ANTHROPIC_API_KEY</key>
 	<string>$(ANTHROPIC_API_KEY)</string>
+	<key>INTERVALS_ATHLETE_ID</key>
+	<string>$(INTERVALS_ATHLETE_ID)</string>
+	<key>INTERVALS_API_KEY</key>
+	<string>$(INTERVALS_API_KEY)</string>
+	<key>COACH_BASE_URL</key>
+	<string>$(COACH_BASE_URL)</string>
+	<key>COACH_INGEST_SECRET</key>
+	<string>$(COACH_INGEST_SECRET)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

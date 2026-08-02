@@ -13,7 +13,7 @@ struct ResponseSchemaTests {
         let roundTripped = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         #expect(roundTripped?["type"] as? String == "object")
         let properties = roundTripped?["properties"] as? [String: Any]
-        #expect(properties?.count == 6)
+        #expect(properties?.count == 8)
     }
 
     @Test func noPropertyUsesArrayValuedType() throws {

@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-All five PRD phases are **implemented** (phases 04/05 were built ahead of the PRD's adherence checkpoint), plus post-PRD additions: Favourites (one-tap preset meals, `Favorite` model), a portion multiplier on review, and Dynamic Type. `docs/macrolog-prd.html` remains the source of truth for scope and locked decisions; `docs/prototype.html` is the original static mockup.
+All five PRD phases are **implemented** (phases 04/05 were built ahead of the PRD's adherence checkpoint), plus post-PRD additions: Favourites (one-tap preset meals, `Favorite` model), a portion multiplier on review, Dynamic Type, and fibre & sodium tracking. `docs/macrolog-prd.html` remains the source of truth for scope and locked decisions; `docs/prototype.html` is the original static mockup.
+
+The **bridge spec** (`docs/macrolog-bridge.md`, phases P06/P07) is also implemented: `CoachRelay` posts per-meal macros to the coach ingest endpoint on confirm/edit/delete (fire-and-forget, own on-disk queue, idempotent on entry ID, errors never surfaced), and `WeightBridge` syncs Health `bodyMass` to intervals.icu wellness on foreground (persisted-anchor query, one earliest-reading value per day, own queue, no weight UI beyond the one-time HB-09 hint). Both are **inert until their keys exist in `Secrets.xcconfig`** — without config they never queue, never prompt, never touch the network. Their queues are JSON files under Application Support/Bridge, deliberately outside SwiftData. The spec's §8 curl check (is intervals.icu already receiving weight?) decides whether the intervals keys should ever be added; §5 payload shapes are implemented as written but unverified against the live services.
 
 ### Project layout / build / test
 
@@ -30,8 +32,8 @@ A single-purpose, single-user iOS app: photo or text description of a meal in, m
 - **No backend.** The app calls the Anthropic API directly for estimation; single user, no shared state.
 - **Estimation model:** Sonnet by default, Opus as a fallback only if estimate quality proves inadequate in practice.
 - **API key** lives in a gitignored config file — never commit it, and never add read-only telemetry/logging that could leak it.
-- Writes exactly four HealthKit types: `dietaryEnergyConsumed`, `dietaryProtein`, `dietaryCarbohydrates`, `dietaryFatTotal` — write-only authorization, no read access requested for any type.
-- **One `HKCorrelation` (type `.food`) per meal**, not per day. Every Health object (the correlation and its four quantity samples) is tagged with the local entry's ID in metadata, and edits/deletes reconcile by deleting everything carrying that tag before rewriting (D-08, ENT-02/03) — no correlation UUID is stored locally and no Health read access is needed. Do not reintroduce a persisted `healthCorrelationID`.
+- Writes exactly six HealthKit types: `dietaryEnergyConsumed`, `dietaryProtein`, `dietaryCarbohydrates`, `dietaryFatTotal`, `dietaryFiber`, `dietarySodium` (fibre/sodium added post-PRD from field feedback, 2026-07-31; sodium is modelled in mg throughout) — write-only authorization, no read access requested for any type. Whoop's Journal still consumes only the original four.
+- **One `HKCorrelation` (type `.food`) per meal**, not per day. Every Health object (the correlation and its six quantity samples) is tagged with the local entry's ID in metadata, and edits/deletes reconcile by deleting everything carrying that tag before rewriting (D-08, ENT-02/03) — no correlation UUID is stored locally and no Health read access is needed. Do not reintroduce a persisted `healthCorrelationID`.
 - **Entries are timestamped at capture time, not at review-confirmation time** — review-before-write means a meal captured before midnight but confirmed after must still land on the capture day.
 - Deleting a local entry deletes its Health sample; editing deletes-and-rewrites so exactly one correlation exists per entry.
 - **Fail loudly, never guess silently:** connectivity failures, API failures, and unidentifiable photos each surface a distinct, explicit error state with the input preserved for retry — never a silent partial/zero write.

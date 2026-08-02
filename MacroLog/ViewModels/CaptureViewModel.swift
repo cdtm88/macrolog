@@ -57,16 +57,26 @@ final class CaptureViewModel {
     var healthState: HealthState = .ok
 
     // Retained input so a failed estimate can be retried without re-capture
-    // (EST-05). Not persisted — cleared once consumed (SEC-03). `lastText` is
-    // readable so a repeat "couldn't identify" reseeds the text sheet with the
-    // user's description instead of forcing a retype (CAP-05).
-    private var lastImage: UIImage?
+    // (EST-05). Not persisted — cleared once consumed (SEC-03). Both are
+    // readable: the capture view shows `lastImage` as the static frame behind
+    // the working overlay and the text sheet reseeds from `lastText` after a
+    // failure, so nothing has to be re-captured or retyped (CAP-05).
+    private(set) var lastImage: UIImage?
     private(set) var lastText: String?
 
     private let context: ModelContext
     private let store: EntryStore
     private let estimator = EstimationService()
     private let health = HealthKitService()
+
+    // Outbound bridges (bridge spec P06/P07). Both are inert without their
+    // config keys; neither is ever awaited on the logging path (ARCH-02).
+    private let coachRelay = CoachRelay()
+    private let weightBridge = WeightBridge()
+
+    /// One-time bridge hint (HB-09) — the only thing a bridge may ever say.
+    var bridgeNotice: String?
+    private var bridgeNoticeTask: Task<Void, Never>?
 
     // Readable (not private) so tests can cancel it and drive the
     // estimation-outcome handlers deterministically without network.
@@ -89,6 +99,7 @@ final class CaptureViewModel {
         await requestHealthAuthorization()
         runDayMaintenance()
         recoverPendingEntry()
+        kickBridges()
     }
 
     /// Called whenever the app returns to the foreground. iOS keeps the app
@@ -100,9 +111,21 @@ final class CaptureViewModel {
         if health.isAvailable {
             healthState = health.isDenied ? .denied : .ok
         }
+        kickBridges()
         let dayStart = Calendar.current.startOfDay(for: Date())
         guard dayStart != lastMaintenanceDayStart else { return }
         runDayMaintenance()
+    }
+
+    /// Foreground drain for both outbound queues (MAC-06, HB-01/05). Detached
+    /// fire-and-forget: nothing here can block or delay the UI (HB-11).
+    private func kickBridges() {
+        Task { [coachRelay] in await coachRelay.kick() }
+        Task { [weightBridge] in
+            await weightBridge.syncOnForeground { [weak self] notice in
+                Task { @MainActor in self?.showBridgeNotice(notice) }
+            }
+        }
     }
 
     private func runDayMaintenance() {
@@ -182,10 +205,14 @@ final class CaptureViewModel {
         openReview(for: entry, editingExisting: false)
     }
 
-    /// Clears the photo-fallback prompt when the text sheet is dismissed
-    /// without submitting, so a later manual text entry starts clean.
+    /// Clears the photo-fallback prompt and any failure context when the text
+    /// sheet is dismissed without submitting, so a later manual text entry
+    /// starts clean.
     func textSheetDismissed() {
-        if captureState != .working { needsTextAfterPhoto = false }
+        if captureState != .working {
+            needsTextAfterPhoto = false
+            estimationError = nil
+        }
     }
 
     /// Retries the last input after a recoverable error (EST-05, HK failures).
@@ -257,7 +284,13 @@ final class CaptureViewModel {
             needsTextAfterPhoto = true
             isShowingText = true
         default:
+            // Every other failure reopens the text sheet with the cause shown
+            // and the input retained: a failed photo keeps its photo (so a
+            // description typed here is submitted alongside it), a failed text
+            // entry reseeds the field for editing instead of a retype (EST-05).
+            needsTextAfterPhoto = lastImage != nil
             estimationError = error
+            isShowingText = true
         }
     }
 
@@ -322,7 +355,9 @@ final class CaptureViewModel {
         entry.macros = Macros(kcal: max(0, (base.kcal * factor).rounded()),
                               protein: max(0, (base.protein * factor).rounded()),
                               carbs: max(0, (base.carbs * factor).rounded()),
-                              fat: max(0, (base.fat * factor).rounded()))
+                              fat: max(0, (base.fat * factor).rounded()),
+                              fiber: max(0, (base.fiber * factor).rounded()),
+                              sodium: max(0, (base.sodium * factor).rounded()))
     }
 
     /// Steps the capture time onto the five-minute grid: 10:13 steps down to
@@ -352,6 +387,18 @@ final class CaptureViewModel {
             healthError = .unavailable
             return
         }
+
+        // Relay to the coach the moment the meal is confirmed (MAC-01) —
+        // fire and forget, never awaited, independent of the Health write's
+        // outcome (MAC-05/07). Re-confirming an edit reuses the entry ID, so
+        // upstream updates rather than duplicates (MAC-03/08).
+        let relayed = (id: entry.id, at: entry.capturedAt, macros: entry.macros)
+        Task { [coachRelay] in
+            await coachRelay.recordConfirmation(mealID: relayed.id,
+                                                loggedAt: relayed.at,
+                                                macros: relayed.macros)
+        }
+
         isWriting = true
         defer { isWriting = false }
         do {
@@ -421,6 +468,15 @@ final class CaptureViewModel {
     /// Deletes an entry and its Health correlation (ENT-02). Completes cleanly
     /// even if the sample is already gone (ENT-05).
     func delete(_ entry: FoodEntry) {
+        // Only confirmed entries reach this path (pending ones go through
+        // discard), so the coach heard about this meal — send the delete
+        // under the same ID (MAC-03), fire and forget.
+        let relayed = (id: entry.id, at: entry.capturedAt, macros: entry.macros)
+        Task { [coachRelay] in
+            await coachRelay.recordDeletion(mealID: relayed.id,
+                                            loggedAt: relayed.at,
+                                            macros: relayed.macros)
+        }
         Task {
             try? await health.delete(entryID: entry.id)
             context.delete(entry)
@@ -459,6 +515,17 @@ final class CaptureViewModel {
         toastTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(2.6))
             self?.toast = nil
+        }
+    }
+
+    // MARK: - Bridge notice (HB-09)
+
+    private func showBridgeNotice(_ message: String) {
+        bridgeNotice = message
+        bridgeNoticeTask?.cancel()
+        bridgeNoticeTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            self?.bridgeNotice = nil
         }
     }
 
