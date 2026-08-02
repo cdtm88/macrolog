@@ -1,13 +1,14 @@
 import WidgetKit
 import SwiftUI
 
-// Widget colours (kept local — the widget target doesn't link the app's Theme).
+// Widget brand hues (kept local — the widget target doesn't link the app's
+// Theme). Only the three macro colours are fixed; every neutral is semantic so
+// the widget follows the Home Screen appearance — the app's forced-light
+// UIUserInterfaceStyle does not apply to an extension.
 private enum W {
     static let protein = Color(red: 0.0, green: 0.478, blue: 1.0)
     static let carbs   = Color(red: 1.0, green: 0.584, blue: 0.0)
     static let fat     = Color(red: 0.686, green: 0.322, blue: 0.871)
-    static let ink     = Color(red: 0.110, green: 0.110, blue: 0.118)
-    static let secondary = Color(red: 0.557, green: 0.557, blue: 0.576)
 }
 
 struct MacroEntry: TimelineEntry {
@@ -49,7 +50,7 @@ struct TodayWidgetView: View {
             default: medium
             }
         }
-        .containerBackground(.white, for: .widget)
+        .containerBackground(.fill.tertiary, for: .widget)
         .widgetURL(SharedConstants.captureURL) // tap opens capture (WID-03)
     }
 
@@ -65,7 +66,7 @@ struct TodayWidgetView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("TODAY")
                     .font(.system(size: 10, weight: .bold)).tracking(0.6)
-                    .foregroundStyle(W.secondary)
+                    .foregroundStyle(.secondary)
                 macroLine("Protein", totals.protein, W.protein, percent: totals.proteinPercent)
                 macroLine("Carbs", totals.carbs, W.carbs, percent: totals.carbsPercent)
                 macroLine("Fat", totals.fat, W.fat, percent: totals.fatPercent)
@@ -79,14 +80,14 @@ struct TodayWidgetView: View {
                            percent: Int?) -> some View {
         HStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 7, height: 7)
-            Text(label).font(.system(size: 11, weight: .medium)).foregroundStyle(W.secondary)
+            Text(label).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
             Spacer()
             if let percent {
                 Text("\(percent)%")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(W.secondary)
+                    .foregroundStyle(.secondary)
             }
-            Text("\(Int(value.rounded()))g").font(.system(size: 11, weight: .bold)).foregroundStyle(W.ink)
+            Text("\(Int(value.rounded()))g").font(.system(size: 11, weight: .bold)).foregroundStyle(.primary)
         }
     }
 }
@@ -104,7 +105,7 @@ struct WidgetRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(Color(white: 0.95), lineWidth: lineWidth)
+            Circle().stroke(Color.primary.opacity(0.1), lineWidth: lineWidth)
             let arcs = computeArcs()
             ForEach(Array(arcs.enumerated()), id: \.offset) { _, arc in
                 Circle()
@@ -115,12 +116,12 @@ struct WidgetRing: View {
             VStack(spacing: 0) {
                 Text("\(Int(macros.kcal.rounded()))")
                     .font(.system(size: size * 0.24, weight: .heavy))
-                    .foregroundStyle(W.ink)
+                    .foregroundStyle(.primary)
                     .minimumScaleFactor(0.6)
                 Text("KCAL")
                     .font(.system(size: size * 0.09, weight: .bold))
                     .tracking(0.8)
-                    .foregroundStyle(W.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(width: size, height: size)
@@ -149,4 +150,24 @@ struct TodayWidget: Widget {
         .description("Your running calories, protein, carbs, and fat for today.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
+}
+
+// Check both colour schemes in the canvas — the widget follows the Home Screen
+// appearance, not the app's forced-light style.
+#Preview("Medium", as: .systemMedium) {
+    TodayWidget()
+} timeline: {
+    MacroEntry(date: .now,
+               snapshot: TodaySnapshot(totals: Macros(kcal: 1430, protein: 96, carbs: 152, fat: 48),
+                                       dayStart: Calendar.current.startOfDay(for: .now),
+                                       entryCount: 3))
+}
+
+#Preview("Small", as: .systemSmall) {
+    TodayWidget()
+} timeline: {
+    MacroEntry(date: .now,
+               snapshot: TodaySnapshot(totals: Macros(kcal: 1430, protein: 96, carbs: 152, fat: 48),
+                                       dayStart: Calendar.current.startOfDay(for: .now),
+                                       entryCount: 3))
 }
