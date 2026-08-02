@@ -70,6 +70,43 @@ struct WeightLedgerTests {
         #expect(evicted.map(\.date) == ["2026-08-01", "2026-08-02"])
     }
 
+    // MARK: - Ledger pruning
+
+    @Test func pruneDropsOldSamplesAndKeepsRecentOnes() {
+        var ledger = WeightLedger()
+        let old = UUID(), recent = UUID()
+        _ = ledger.apply(added: [
+            (old, moment(day: 1, hour: 8), 84.0),
+            (recent, moment(day: 20, hour: 8), 82.0)
+        ], deleted: [])
+
+        ledger.prune(olderThan: moment(day: 10, hour: 0))
+
+        #expect(ledger.samples[old] == nil)
+        #expect(ledger.samples[recent] != nil)
+        #expect(ledger.value(forDay: "2026-08-20") == 82.0)
+    }
+
+    /// A deletion of a sample still inside the retained window must recompute
+    /// its day exactly as before pruning existed (HB-02/03).
+    @Test func deletionWithinRetainedWindowStillRecomputesTheDay() {
+        var ledger = WeightLedger()
+        let prunedAway = UUID(), earliest = UUID()
+        _ = ledger.apply(added: [
+            (prunedAway, moment(day: 1, hour: 8), 84.0),
+            (earliest, moment(day: 20, hour: 7), 82.0),
+            (UUID(), moment(day: 20, hour: 9), 82.6)
+        ], deleted: [])
+        ledger.prune(olderThan: moment(day: 10, hour: 0))
+
+        let changed = ledger.apply(added: [], deleted: [earliest])
+        #expect(changed == ["2026-08-20"])
+        #expect(ledger.value(forDay: "2026-08-20") == 82.6)
+
+        // Deleting an already-pruned sample is unknown: nothing recomputes.
+        #expect(ledger.apply(added: [], deleted: [prunedAway]).isEmpty)
+    }
+
     // MARK: - First-sync gate (HB-08)
 
     /// The read prompt must arrive in context — after the app has proven

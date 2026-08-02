@@ -46,6 +46,15 @@ struct WeightLedger: Codable, Equatable {
             .min { $0.takenAt < $1.takenAt }?
             .weightKg
     }
+
+    /// The ledger exists only so a deletion can recompute its day (HB-02/03);
+    /// deletions arrive for recent samples, not multi-year history. Dropping
+    /// samples older than the cutoff keeps the state file from growing — and
+    /// being fully re-encoded — forever. A deletion of an already-pruned
+    /// sample is simply unknown: no day recomputes, the upstream value stands.
+    mutating func prune(olderThan cutoff: Date) {
+        samples = samples.filter { $0.value.takenAt >= cutoff }
+    }
 }
 
 /// One pending intervals.icu write: a day and its weight, nil meaning "clear".
@@ -110,6 +119,10 @@ actor WeightBridge {
 
     /// HB-10 bound: over a year of daily values queued before eviction.
     private static let queueLimit = 366
+
+    /// Ledger retention: comfortably beyond the queue bound, so any day that
+    /// could still be pending an upload can also still be recomputed.
+    private static let ledgerRetentionDays = 400
 
     private let config: Config?
     private let session: URLSession
@@ -178,6 +191,8 @@ actor WeightBridge {
                 let upload = WeightUpload(date: day, weightKg: state.ledger.value(forDay: day))
                 state.pending = WeightUpload.merge(state.pending, with: upload)
             }
+            state.ledger.prune(olderThan: Date(timeIntervalSinceNow:
+                -Double(Self.ledgerRetentionDays) * 24 * 3600))
             enforceQueueBound()
             state.anchor = try? NSKeyedArchiver.archivedData(withRootObject: result.newAnchor,
                                                              requiringSecureCoding: true)
