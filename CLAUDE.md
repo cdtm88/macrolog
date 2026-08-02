@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-All five PRD phases are **implemented** (phases 04/05 were built ahead of the PRD's adherence checkpoint), plus post-PRD additions: Favourites (one-tap preset meals, `Favorite` model), a portion multiplier on review, Dynamic Type, and fibre & sodium tracking. `docs/macrolog-prd.html` remains the source of truth for scope and locked decisions; `docs/prototype.html` is the original static mockup.
+All five PRD phases are **implemented** (phases 04/05 were built ahead of the PRD's adherence checkpoint), plus post-PRD additions: Favourites (one-tap preset meals, `Favorite` model), a portion multiplier on review, Dynamic Type, and fibre & sodium tracking. Post-PRD additions are recorded (with rationale) in `.planning/ROADMAP.md` → "Accepted post-PRD additions" — check there before flagging something as scope creep. `docs/macrolog-prd.html` remains the source of truth for scope and locked decisions; `docs/prototype.html` is the original static mockup. The app forces light mode, but the **widget follows the system appearance** (an extension ignores the host app's `UIUserInterfaceStyle`) — its neutrals are semantic colours, only the three macro hues are fixed. A store that fails to open at launch degrades to an explicit error screen with a reset option, never a crash loop.
 
-The **bridge spec** (`docs/macrolog-bridge.md`, phases P06/P07) is also implemented: `CoachRelay` posts per-meal macros to the coach ingest endpoint on confirm/edit/delete (fire-and-forget, own on-disk queue, idempotent on entry ID, errors never surfaced), and `WeightBridge` syncs Health `bodyMass` to intervals.icu wellness on foreground (persisted-anchor query, one earliest-reading value per day, own queue, no weight UI beyond the one-time HB-09 hint). Both are **inert until their keys exist in `Secrets.xcconfig`** — without config they never queue, never prompt, never touch the network. Their queues are JSON files under Application Support/Bridge, deliberately outside SwiftData. The spec's §8 curl check (is intervals.icu already receiving weight?) decides whether the intervals keys should ever be added; §5 payload shapes are implemented as written but unverified against the live services.
+The **bridge spec** (`docs/macrolog-bridge.md`, phases P06/P07) is also implemented: `CoachRelay` posts per-meal macros to the coach ingest endpoint on confirm/edit/delete (fire-and-forget, own on-disk queue, idempotent on entry ID, errors never surfaced), and `WeightBridge` syncs Health `bodyMass` to intervals.icu wellness on foreground (persisted-anchor query, one earliest-reading value per day, ledger pruned to 400 days, own bounded queue). Both are **inert until their keys exist in `Secrets.xcconfig`** — without config they never queue, never prompt, never touch the network. Their queues are JSON files under Application Support/Bridge, deliberately outside SwiftData. Queue failures are classified: transport errors, 5xx, 408 and 429 stop the drain and retry later; any other non-2xx is permanent — logged to `coach-drops.log` / `weight-evictions.log` and dropped so one rejected item can never wedge the queue behind it. The bodyMass read prompt is gated on a confirmed meal existing, so it never stacks onto the nutrition prompt at first launch (HB-08); the HB-09 "nothing readable" notice fires once per empty episode, re-arming after samples are seen. The intervals side is **live-verified** (2026-08-02): weight is sparse upstream so the bridge is warranted, and a cleared day must send `weight: -1` — `null` returns 200 but silently no-ops, `0` is rejected 422 (spec §5 note). The coach endpoint shape is implemented per spec §5 but remains unverified (no live endpoint yet).
 
 ### Project layout / build / test
 
@@ -14,12 +14,14 @@ The **bridge spec** (`docs/macrolog-bridge.md`, phases P06/P07) is also implemen
 - Targets: `MacroLog` (app), `MacroLogWidget` (Home Screen widget), `MacroLogTests` (Swift Testing unit tests); `MacroLogShared/` sources compile into both app and widget.
 - Build: `xcodebuild build -project MacroLog.xcodeproj -scheme MacroLog -destination 'platform=iOS Simulator,name=iPhone 17 Pro'`
 - Test: same command with `test` — run the suite before every commit.
-- The API key lives in gitignored `MacroLog/Config/Secrets.xcconfig` (see `Secrets.example.xcconfig`), injected into Info.plist at build time.
+- All secrets — the Anthropic key, intervals.icu athlete ID + API key, coach base URL + ingest secret — live in gitignored `MacroLog/Config/Secrets.xcconfig` (see `Secrets.example.xcconfig`), injected into Info.plist at build time and read via `Secrets.swift`. A blank key disables its feature rather than erroring.
 
 ### Known deviations from the PRD text (intent preserved)
 
 - The Health correlation UUID is **not** persisted locally; reconciliation deletes by the entry-ID metadata tag on every Health sample instead (satisfies D-08/ENT-02/03 without read access).
 - Estimation uses structured outputs (JSON schema) rather than prompt-only JSON, and an unidentifiable photo is re-sent alongside the user's supplementary text (EST-04).
+- The bridges deliberately supersede the PRD's "no third-party data" premise and widen D-03's "no backend" wording (still no server component; the app now writes directly to the coach endpoint and intervals.icu as well as the Anthropic API). Recorded in `.planning/ROADMAP.md` and `.planning/PROJECT.md`.
+- A cleared weight day sends `{"weight": -1}`, not the spec §5-implied `null` — live-verified 2026-08-02 that `null` silently no-ops (see spec §5 note).
 
 ## What MacroLog is
 
@@ -29,9 +31,9 @@ A single-purpose, single-user iOS app: photo or text description of a meal in, m
 
 - **Native iOS, SwiftUI, iOS 18+ only.** HealthKit write access requires a native app; no iPad/Watch targets.
 - **SwiftData** for local persistence — only today's entries plus pending (unreviewed) items are ever stored locally.
-- **No backend.** The app calls the Anthropic API directly for estimation; single user, no shared state.
+- **No backend.** No server component exists (bridge spec ARCH-01 keeps this); the app calls the Anthropic API directly for estimation and, post-PRD, writes directly to the coach ingest endpoint and intervals.icu — single user, no shared state.
 - **Estimation model:** Sonnet by default, Opus as a fallback only if estimate quality proves inadequate in practice.
-- **API key** lives in a gitignored config file — never commit it, and never add read-only telemetry/logging that could leak it.
+- **Secrets** (Anthropic, intervals.icu, coach) live in one gitignored config file — never commit them, and never add read-only telemetry/logging that could leak them.
 - Writes exactly six HealthKit types: `dietaryEnergyConsumed`, `dietaryProtein`, `dietaryCarbohydrates`, `dietaryFatTotal`, `dietaryFiber`, `dietarySodium` (fibre/sodium added post-PRD from field feedback, 2026-07-31; sodium is modelled in mg throughout) — write-only authorization, no read access requested for any type. Whoop's Journal still consumes only the original four.
 - **One `HKCorrelation` (type `.food`) per meal**, not per day. Every Health object (the correlation and its six quantity samples) is tagged with the local entry's ID in metadata, and edits/deletes reconcile by deleting everything carrying that tag before rewriting (D-08, ENT-02/03) — no correlation UUID is stored locally and no Health read access is needed. Do not reintroduce a persisted `healthCorrelationID`.
 - **Entries are timestamped at capture time, not at review-confirmation time** — review-before-write means a meal captured before midnight but confirmed after must still land on the capture day.
@@ -50,6 +52,8 @@ Work is organized as one milestone (M1) across 5 phases, deliberately ordered to
 5. **today-widget** *(provisional)* — Home Screen widget with today's totals.
 
 Phases 04 and 05 are explicitly not committed scope — the PRD calls for at least a week of real daily use after phase 02 before starting them, and treats their unimplemented requirements as expected, not a failure.
+
+Post-PRD phases 06 (**coach-relay**) and 07 (**weight-bridge**) come from `docs/macrolog-bridge.md`, which is their source of truth — see `.planning/ROADMAP.md` and the 06/07 CONTEXT docs.
 
 ## Working constraints
 

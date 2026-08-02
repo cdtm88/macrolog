@@ -14,35 +14,44 @@ HealthKit, SwiftData, WidgetKit, direct Anthropic API calls (no backend).
 
 ```
 MacroLog/            The app
-  App/               Entry point + SwiftData container
+  App/               Entry point + SwiftData container (+ storage-failure recovery)
   Models/            FoodEntry, Favorite (SwiftData), EntryStatus, MacroEstimate
-  Services/          HealthKit, Anthropic client, estimation, image prep, store
+  Services/          HealthKit, Anthropic client, estimation, image prep, store,
+                     CoachRelay + WeightBridge (outbound bridges, see below)
   ViewModels/        CaptureViewModel — the whole capture→review→Health flow
   Views/             Capture, Review, Today list, Favourites, camera, text sheet
   Design/            Theme (matches the prototype's tricolour ring)
   Resources/         Info.plist, entitlements
-  Config/            Secrets.example.xcconfig (API key goes in Secrets.xcconfig)
+  Config/            Secrets.example.xcconfig (all keys go in Secrets.xcconfig)
   Assets.xcassets/   App icon (the macro ring) + accent colour
 MacroLogWidget/      Home Screen widget showing today's totals
 MacroLogShared/      Code shared by app + widget (Macros, App-Group snapshot)
-MacroLogTests/       Unit tests (Swift Testing) — decode, day rules, portions
-docs/                PRD (source of truth for scope), prototype, logos
+MacroLogTests/       Unit tests (Swift Testing) — decode, day rules, portions,
+                     bridge queues and failure handling
+docs/                PRD (source of truth for scope), bridge spec, prototype
+.planning/           Requirements matrix, roadmap, backlog, per-phase context
 project.yml          XcodeGen spec — canonical project definition
 Scripts/             App-icon generator
 ```
 
 ## One-time setup
 
-1. **Add your Anthropic API key** (kept out of version control — SEC-01):
+1. **Add your keys** (kept out of version control — SEC-01):
 
    ```sh
    cp MacroLog/Config/Secrets.example.xcconfig MacroLog/Config/Secrets.xcconfig
    # edit Secrets.xcconfig and paste your key after `ANTHROPIC_API_KEY = `
    ```
 
-   `Secrets.xcconfig` is gitignored. The build injects the key into `Info.plist`;
-   the app reads it at runtime. Without a key, the app runs but every estimate
-   shows an explicit "API key not set" message.
+   `Secrets.xcconfig` is gitignored. The build injects the keys into
+   `Info.plist`; the app reads them at runtime. Without the Anthropic key, the
+   app runs but every estimate shows an explicit "API key not set" message.
+
+   The same file optionally holds the bridge credentials
+   (`INTERVALS_ATHLETE_ID` / `INTERVALS_API_KEY` for weight sync,
+   `COACH_BASE_URL` / `COACH_INGEST_SECRET` for the macro relay). Left blank,
+   each bridge is completely inert — no queueing, no permission prompt, no
+   network.
 
 2. **Open the project** in Xcode 16+:
 
@@ -68,8 +77,10 @@ Scripts/             App-icon generator
 ## Tests
 
 Unit tests (Swift Testing) cover estimation decoding, the day-boundary/purge
-rules, widget snapshot rollover, portion scaling, and favourites. Run them
-before every commit:
+rules, widget snapshot rollover, portion scaling, favourites, store-corruption
+recovery, and the bridge queues (day collapse, deletion propagation, bounding,
+failure classification against a stubbed session). Run them before every
+commit:
 
 ```sh
 xcodebuild test -project MacroLog.xcodeproj -scheme MacroLog \
@@ -95,7 +106,27 @@ xcodebuild test -project MacroLog.xcodeproj -scheme MacroLog \
   reconciling the Health sample. Yesterday's written entries are purged locally
   — Whoop is the history view.
 - The **widget** shows today's running calories/protein/carbs/fat and opens
-  capture when tapped.
+  capture when tapped. It follows the system appearance (light and dark) even
+  though the app itself is light-only.
+
+### Outbound bridges (post-PRD, `docs/macrolog-bridge.md`)
+
+Two fire-and-forget data paths, both invisible in the UI and both disabled
+unless their keys exist in `Secrets.xcconfig`:
+
+- **Coach relay** — every confirm/edit/delete posts that meal's macros to a
+  coach ingest endpoint under a stable meal ID. Own on-disk queue, drains on
+  foreground, retries with backoff; errors are never shown (MAC-06).
+- **Weight bridge** — on foreground, an anchored HealthKit query reads new and
+  deleted `bodyMass` samples and PUTs one value per day (the day's earliest)
+  to intervals.icu wellness. The read permission is asked only after the first
+  confirmed meal, never at first launch (HB-08). A cleared day sends
+  `weight: -1` — verified against the live API; `null` silently no-ops.
+
+Both queues classify failures: transport errors and 5xx/408/429 retry later;
+any other rejection is appended to a local log under Application
+Support/Bridge (`coach-drops.log`, `weight-evictions.log`) and dropped so one
+bad item can never block the queue.
 
 ### Verifying the Whoop pickup (phase 01)
 
@@ -132,6 +163,10 @@ When a photo can't be identified, the supplementary text description is sent
 - Phases 04 (friction) and 05 (widget) are marked *provisional* in the PRD —
   they're implemented here, but expect to revisit their scope after the
   real-world adherence checkpoint (a week of daily use).
+- If the local store ever fails to open, the app shows an explicit storage
+  error with a "Reset Local Data" option instead of crashing — confirmed meals
+  are already safe in Apple Health, so only today's list is at stake.
 - See `CLAUDE.md` for the build/test workflow and the documented deviations
   from the PRD text (Health reconciliation via metadata tags, structured
-  outputs).
+  outputs, the bridges' third-party writes, the `-1` weight clear), and
+  `.planning/` for the requirements matrix and accepted post-PRD additions.
