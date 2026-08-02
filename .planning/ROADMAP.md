@@ -11,6 +11,8 @@ are tested before any polish is built.
 | 03 | entry-lifecycle | Persist locally; keep Health reconciled through edits/deletes. | CAP-05, REV-04, HK-06, HK-08, ENT-01..05, ENT-07, ENT-08, SEC-03, SCALE-01 |
 | 04 | friction-pass *(provisional)* | Remove delay/taps between opening and a logged meal. | CAP-01, CAP-03, REV-03, PERF-01, PERF-02, A11Y-01 |
 | 05 | today-widget *(provisional)* | Surface today's totals on the Home Screen. | WID-01..04 |
+| 06 | coach-relay *(post-PRD)* | Per-meal macros to the coach ingest endpoint. | MAC-01..08, ARCH-01..05 — `docs/macrolog-bridge.md` |
+| 07 | weight-bridge *(post-PRD)* | Health bodyMass to intervals.icu wellness. | HB-01..12 — `docs/macrolog-bridge.md` |
 
 **Adherence checkpoint** after phase 02: log real meals for at least a week
 before starting phase 04. Phases 04/05 are a starting hypothesis about what
@@ -30,3 +32,15 @@ provisional pending the checkpoint.
   capped at `Favorite.maxCount` (6), and nothing is queryable or looked up.
   Requirements: FAV-01/02 in REQUIREMENTS.md. Also documented in CLAUDE.md and
   README.
+
+- **Outbound bridges, phases 06/07** (added 2026-08-02): `CoachRelay` posts
+  per-meal macros to the AI cycling coach's ingest endpoint on confirm, edit,
+  and delete; `WeightBridge` syncs Health `bodyMass` to intervals.icu wellness
+  on foreground. Source of truth: `docs/macrolog-bridge.md` (requirement IDs
+  MAC-*, HB-*, ARCH-*). Both are inert until their keys exist in the
+  gitignored `Secrets.xcconfig`, never block or surface errors on the logging
+  path, and add no weight UI. This deliberately supersedes the PRD's "no
+  third-party data" premise (§8) and widens D-03's "no backend" wording:
+  there is still no server component (ARCH-01), but the app now writes
+  directly to two external services in addition to the Anthropic API —
+  accepted deviations, not oversights.

@@ -39,4 +39,7 @@ upsells, or features you did not ask for.
 - **Third risk: estimate quality on composite dishes** (curries, stews, absorbed
   oils). Mitigated by the mandatory review step and equal-status text input;
   escalation path is the Opus fallback (D-04).
-- **No compliance surface.** Single user, no distribution, no third-party data.
+- **No compliance surface.** Single user, no distribution. ("No third-party
+  data" held until 2026-08-02: the P06/P07 bridges now send per-meal macros to
+  the author's own coach endpoint and body mass to intervals.icu — an accepted
+  deviation, see ROADMAP → "Accepted post-PRD additions".)

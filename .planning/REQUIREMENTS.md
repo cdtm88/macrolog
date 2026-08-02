@@ -39,7 +39,7 @@ criterion, with the phase that owns it and where it lives in the codebase.
 
 | ID | Requirement | Phase | Where |
 |----|-------------|-------|-------|
-| HK-01 | Request write auth for exactly four dietary types. | 01 | `HealthKitService.shareTypes` |
+| HK-01 | Request write auth for exactly four dietary types. | 01 | **Accepted deviation** — six types since fibre & sodium were added post-PRD from field feedback (2026-07-31): energy, protein, carbs, fat, fibre, sodium, still write-only (`HealthKitService.shareTypes`). Whoop's Journal consumes only the original four. See CLAUDE.md → locked decisions. |
 | HK-02 | Confirmed meal writes one `.food` HKCorrelation, timestamped to logged time. | 01 | `HealthKitService.write` |
 | HK-03 | Description attached as metadata, visible in Health. | 01 | `HKMetadataKeyFoodType` |
 | HK-04 | Correlation UUID persisted on successful write. | 01 | **Accepted deviation** — not met as worded: no UUID is persisted locally. The intent (edits/deletes reconcile against exactly the right Health objects, D-08) is met by tagging every Health object with the entry ID in metadata and deleting by that tag (`HealthKitService.replace`/`delete`). See CLAUDE.md → "Known deviations from the PRD text". |
@@ -77,6 +77,16 @@ criterion, with the phase that owns it and where it lives in the codebase.
 | FAV-01 | Up to six user-curated preset meals (name + fixed macros); no lookup or database. | 04 | `Favorite.maxCount`, `FavoritesView` |
 | FAV-02 | Tapping a favourite opens review with its preset values, no AI estimate; no Health write until confirmed (REV-01). | 04 | `CaptureViewModel.submitFavorite` |
 
+## Bridges (MAC / HB / ARCH) — accepted post-PRD addition (P06/P07, see ROADMAP)
+
+Requirement IDs, acceptance criteria, and payload shapes live in the bridge
+spec, `docs/macrolog-bridge.md` — the source of truth for both bridges.
+Implemented in `CoachRelay` (MAC-01..08) and `WeightBridge` (HB-01..12),
+architecture constraints ARCH-01..05 across both; tests in `CoachRelayTests`,
+`WeightLedgerTests`, and `BridgeFailureTests`. One verified deviation from the
+spec's §5 example: a cleared day sends `weight: -1`, because the live
+intervals.icu API silently ignores `null` (see the note in spec §5).
+
 ## Non-functional
 
 | ID | Requirement | Phase | Where |
@@ -85,7 +95,7 @@ criterion, with the phase that owns it and where it lives in the codebase.
 | PERF-02 | Submitting returns UI control < 200ms. | 04 | async `beginWork` |
 | PERF-03 | Photo estimate typically < 10s; > 20s shows still-working. | 02 | `isTakingLong` |
 | PERF-04 | Payloads downscaled so no request exceeds 2MB. | 02 | `ImageProcessing` |
-| SEC-01 | API key gitignored, absent from history. | 02 | `Secrets.xcconfig`, `.gitignore` |
+| SEC-01 | All secrets — the Anthropic key, intervals.icu athlete ID and API key, coach base URL and ingest secret — gitignored, absent from history. | 02 | `Secrets.xcconfig`, `.gitignore`, `Secrets.swift` |
 | SEC-02 | HealthKit write only, no read auth. | 01 | `requestAuthorization(read: [])` |
 | SEC-03 | Photos transmitted, not persisted beyond entry lifecycle. | 03 | in-memory `lastImage` only |
 | SCALE-01 | Correct with up to 10 entries/day. | 03 | simple fetches |
