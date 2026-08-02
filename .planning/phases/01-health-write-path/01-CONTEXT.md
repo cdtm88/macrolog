@@ -12,6 +12,7 @@ description appear in the Apple Health app sourced from MacroLog; Whoop's Journa
 pre-fills those values the same day. See README → "Verifying the Whoop pickup"
 for the order-dependent verification procedure.
 
-**Implementation:** `HealthKitService` (write-only auth for exactly four types,
-per-meal `.food` correlation, metadata description, UUID persistence, delete/
-replace by metadata tag), `UnsupportedDeviceView`, denied-permission banner.
+**Implementation:** `HealthKitService` (write-only auth, per-meal `.food`
+correlation, metadata description, delete/replace by entry-ID metadata tag — no
+correlation UUID is persisted; accepted deviation from HK-04's wording, see
+CLAUDE.md), `UnsupportedDeviceView`, denied-permission banner.

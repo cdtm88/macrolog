@@ -42,7 +42,7 @@ criterion, with the phase that owns it and where it lives in the codebase.
 | HK-01 | Request write auth for exactly four dietary types. | 01 | `HealthKitService.shareTypes` |
 | HK-02 | Confirmed meal writes one `.food` HKCorrelation, timestamped to logged time. | 01 | `HealthKitService.write` |
 | HK-03 | Description attached as metadata, visible in Health. | 01 | `HKMetadataKeyFoodType` |
-| HK-04 | Correlation UUID persisted on successful write. | 01 | `FoodEntry.healthCorrelationID` |
+| HK-04 | Correlation UUID persisted on successful write. | 01 | **Accepted deviation** — not met as worded: no UUID is persisted locally. The intent (edits/deletes reconcile against exactly the right Health objects, D-08) is met by tagging every Health object with the entry ID in metadata and deleting by that tag (`HealthKitService.replace`/`delete`). See CLAUDE.md → "Known deviations from the PRD text". |
 | HK-05 | Unavailable HealthKit → explicit unsupported state, no crash. | 01 | `UnsupportedDeviceView` |
 | HK-06 | Failed write leaves entry unwritten + retry; never silently logged. | 03 | `.unwritten`, `retryWrite` |
 | HK-07 | Denied auth → Settings path, not a generic failure/loop. | 01 | `deniedBanner`, permission banner |
