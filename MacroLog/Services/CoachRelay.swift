@@ -81,6 +81,7 @@ actor CoachRelay {
     private let config: Config?
     private let session: URLSession
     private let queueFile: URL
+    private let dropLog: URL
 
     private var queue: [CoachMealItem] = []
     private var loaded = false
@@ -89,10 +90,12 @@ actor CoachRelay {
 
     init(config: Config? = CoachRelay.loadConfig(),
          session: URLSession = .shared,
-         queueFile: URL = BridgeFiles.url("coach-queue.json")) {
+         queueFile: URL = BridgeFiles.url("coach-queue.json"),
+         dropLog: URL = BridgeFiles.url("coach-drops.log")) {
         self.config = config
         self.session = session
         self.queueFile = queueFile
+        self.dropLog = dropLog
     }
 
     // MARK: - Enqueue
@@ -131,7 +134,9 @@ actor CoachRelay {
         Task { await drain() }
     }
 
-    private func drain() async {
+    // Internal (not private) so tests can drive the drain deterministically
+    // against a stubbed session, without kick()'s unstructured Task.
+    func drain() async {
         guard let config else { return }
         loadIfNeeded()
         while let item = queue.first {
@@ -140,14 +145,31 @@ actor CoachRelay {
                 queue.removeFirst()
                 persist()
                 consecutiveFailures = 0
+            } catch BridgeSendError.permanent(let status) {
+                // The endpoint rejected this item outright (rotated secret,
+                // malformed payload) — replay can never succeed, and leaving
+                // it at the head would wedge every later meal behind it
+                // forever. Log the full payload, drop it, keep draining.
+                // Still invisible to the user (MAC-06).
+                BridgeFiles.appendLog(["HTTP \(status) dropped \(payloadDescription(item))"],
+                                      to: dropLog)
+                queue.removeFirst()
+                persist()
             } catch {
-                // Oldest-first ordering is preserved; back off and retry the
-                // whole queue later. Never surfaces to the user (MAC-06).
+                // Retryable (transport, timeout, 5xx, 408, 429): oldest-first
+                // ordering is preserved; back off and retry the whole queue
+                // later (MAC-06).
                 consecutiveFailures += 1
                 scheduleRetry()
                 return
             }
         }
+    }
+
+    private func payloadDescription(_ item: CoachMealItem) -> String {
+        (try? JSONSerialization.data(withJSONObject: item.payload()))
+            .flatMap { String(data: $0, encoding: .utf8) }
+            ?? item.mealID.uuidString.lowercased()
     }
 
     private func scheduleRetry() {
@@ -176,9 +198,11 @@ actor CoachRelay {
         request.httpBody = try JSONSerialization.data(withJSONObject: item.payload())
 
         let (_, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
+        }
+        guard (200...299).contains(http.statusCode) else {
+            throw BridgeSendError.classify(status: http.statusCode)
         }
     }
 
@@ -198,6 +222,28 @@ actor CoachRelay {
             try? data.write(to: queueFile, options: .atomic)
         }
     }
+
+    // Test hook: the queue as it would drain, oldest first.
+    func queuedItems() -> [CoachMealItem] {
+        loadIfNeeded()
+        return queue
+    }
+}
+
+/// Send-failure classification shared by both bridge queues. Transport errors
+/// and server-side conditions (5xx, 408, 429) are worth replaying; any other
+/// non-2xx is a permanent rejection (rotated secret, wrong athlete ID, bad
+/// payload) that can never succeed and must not wedge the queue behind it.
+enum BridgeSendError: Error, Equatable {
+    case permanent(status: Int)
+    case retryable(status: Int)
+
+    static func classify(status: Int) -> BridgeSendError {
+        switch status {
+        case 500...599, 408, 429: return .retryable(status: status)
+        default: return .permanent(status: status)
+        }
+    }
 }
 
 /// Locations for the bridge queues: plain JSON files in Application Support,
@@ -210,5 +256,19 @@ enum BridgeFiles {
             .appending(path: "Bridge", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         return base.appending(path: name)
+    }
+
+    /// Appends lines to a local log file — the shared "never drop silently"
+    /// mechanism behind HB-10 evictions and permanently rejected items.
+    static func appendLog(_ lines: [String], to url: URL) {
+        guard !lines.isEmpty else { return }
+        let data = Data((lines.joined(separator: "\n") + "\n").utf8)
+        if let handle = try? FileHandle(forWritingTo: url) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: data)
+        } else {
+            try? data.write(to: url)
+        }
     }
 }

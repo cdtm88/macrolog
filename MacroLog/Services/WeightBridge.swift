@@ -138,7 +138,7 @@ actor WeightBridge {
     /// changed days, drain. `onNotice` delivers the single HB-09 hint — the
     /// only thing this bridge ever says to the user.
     func syncOnForeground(onNotice: @escaping @Sendable (String) -> Void) async {
-        guard let config, HKHealthStore.isHealthDataAvailable(), !syncing else { return }
+        guard config != nil, HKHealthStore.isHealthDataAvailable(), !syncing else { return }
         syncing = true
         defer { syncing = false }
         loadIfNeeded()
@@ -175,7 +175,7 @@ actor WeightBridge {
             // foreground retries the same delta (HB-11).
         }
 
-        await drain(config: config)
+        await drain()
     }
 
     /// Read access for bodyMass only, requested separately from the nutrition
@@ -203,14 +203,28 @@ actor WeightBridge {
 
     // MARK: - Drain
 
-    private func drain(config: Config) async {
+    // Internal (not private) so tests can drive the drain deterministically
+    // against a stubbed session, without going through HealthKit.
+    func drain() async {
+        guard let config else { return }
+        loadIfNeeded()
         while let upload = state.pending.first {
             do {
                 try await put(upload, config: config)
                 state.pending.removeFirst()
                 persist()
+            } catch BridgeSendError.permanent(let status) {
+                // Rejected outright (bad key, wrong athlete ID, invalid
+                // value) — replay can never succeed, and leaving it at the
+                // head would block every later weight forever. Log, drop,
+                // keep draining. Still silent (HB-11).
+                BridgeFiles.appendLog(["\(upload.date) \(upload.weightKg.map { String($0) } ?? "clear") dropped HTTP \(status)"],
+                                      to: evictionLog)
+                state.pending.removeFirst()
+                persist()
             } catch {
-                // Oldest-first order preserved; drains next foreground (HB-05).
+                // Retryable (transport, timeout, 5xx, 408, 429): oldest-first
+                // order preserved; drains next foreground (HB-05).
                 return
             }
         }
@@ -218,6 +232,11 @@ actor WeightBridge {
 
     /// `PUT /api/v1/athlete/{id}/wellness/{date}` with `weight` in kg, basic
     /// auth with the literal username `API_KEY` (HB-04). Idempotent per date.
+    ///
+    /// Clearing (every sample of a day deleted, HB-02) sends `-1`: verified
+    /// against the live API on 2026-08-02 — `null` returns 200 but silently
+    /// leaves the stored value unchanged, `0` is rejected with 422, and `-1`
+    /// returns 200 and clears the field.
     private func put(_ upload: WeightUpload, config: Config) async throws {
         let url = URL(string: "https://intervals.icu/api/v1")!
             .appending(path: "athlete/\(config.athleteID)/wellness/\(upload.date)")
@@ -227,13 +246,15 @@ actor WeightBridge {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let credentials = Data("API_KEY:\(config.apiKey)".utf8).base64EncodedString()
         request.setValue("Basic \(credentials)", forHTTPHeaderField: "Authorization")
-        let body: [String: Any] = ["weight": upload.weightKg ?? NSNull()]
+        let body: [String: Any] = ["weight": upload.weightKg ?? -1]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (_, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
+        }
+        guard (200...299).contains(http.statusCode) else {
+            throw BridgeSendError.classify(status: http.statusCode)
         }
     }
 
@@ -243,16 +264,21 @@ actor WeightBridge {
         let (kept, evicted) = WeightUpload.bounded(state.pending, limit: Self.queueLimit)
         guard !evicted.isEmpty else { return }
         state.pending = kept
-        let lines = evicted
-            .map { "\($0.date) \($0.weightKg.map { String($0) } ?? "null")" }
-            .joined(separator: "\n") + "\n"
-        if let handle = try? FileHandle(forWritingTo: evictionLog) {
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: Data(lines.utf8))
-        } else {
-            try? Data(lines.utf8).write(to: evictionLog)
-        }
+        BridgeFiles.appendLog(evicted.map { "\($0.date) \($0.weightKg.map { String($0) } ?? "clear") evicted (queue bound)" },
+                              to: evictionLog)
+    }
+
+    // MARK: - Test hooks
+
+    func seedPending(_ uploads: [WeightUpload]) {
+        loadIfNeeded()
+        state.pending = uploads
+        persist()
+    }
+
+    func pendingUploads() -> [WeightUpload] {
+        loadIfNeeded()
+        return state.pending
     }
 
     // MARK: - Persistence

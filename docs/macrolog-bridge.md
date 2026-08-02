@@ -101,6 +101,13 @@ Content-Type: application/json
 
 Verify both endpoint shapes against the live services before building.
 
+**Verified against the live intervals.icu API (2026-08-02):** setting a weight
+works exactly as above. Clearing does not: `{"weight": null}` returns 200 but
+silently leaves the stored value unchanged, `{"weight": 0}` is rejected with
+422, and `DELETE` on the wellness date returns 405. `{"weight": -1}` returns
+200 and clears the field — the implementation sends `-1` for a cleared day.
+The coach endpoint shape remains unverified (no live endpoint yet).
+
 ## 6. Configuration
 
 ```swift
