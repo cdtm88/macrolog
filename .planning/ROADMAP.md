@@ -18,3 +18,15 @@ friction matters — expect to rewrite them after the checkpoint.
 
 **Status:** all five phases implemented in this initial build. 04/05 remain
 provisional pending the checkpoint.
+
+## Accepted post-PRD additions
+
+- **Favourites** (added 2026-07-25, during the adherence checkpoint): up to six
+  user-curated preset meals with fixed macros, logged in one tap without an AI
+  estimate — review-before-write (REV-01) still applies. Accepted because it
+  serves phase 04's friction goal (repeat meals are the highest-frequency
+  logging path). It does **not** reopen the backlog's "food database, barcode
+  scanning, branded-item lookup" item: favourites are hand-entered by the user,
+  capped at `Favorite.maxCount` (6), and nothing is queryable or looked up.
+  Requirements: FAV-01/02 in REQUIREMENTS.md. Also documented in CLAUDE.md and
+  README.

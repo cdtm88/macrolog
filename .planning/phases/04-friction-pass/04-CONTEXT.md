@@ -14,3 +14,8 @@ navigation; operable at the largest Dynamic Type size.
 
 **Implementation:** camera default at root, background session configuration,
 async submit, ready pill, accessibility labels, scalable fonts.
+
+**Post-PRD addition owned by this phase:** Favourites (`Favorite`,
+`FavoritesView`, chips in `TextEntrySheet`) — preset meals logged without an AI
+round-trip, accepted as serving this phase's friction goal. Rationale and
+scope boundary in ROADMAP → "Accepted post-PRD additions".

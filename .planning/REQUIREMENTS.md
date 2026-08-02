@@ -70,6 +70,13 @@ criterion, with the phase that owns it and where it lives in the codebase.
 | WID-03 | Tapping opens the app into capture. | 05 | `widgetURL` + `onOpenURL` |
 | WID-04 | No entries → zero values, not empty/error. | 05 | `TodaySnapshotStore.read` |
 
+## Favourites (FAV) — accepted post-PRD addition (see ROADMAP)
+
+| ID | Requirement | Phase | Where |
+|----|-------------|-------|-------|
+| FAV-01 | Up to six user-curated preset meals (name + fixed macros); no lookup or database. | 04 | `Favorite.maxCount`, `FavoritesView` |
+| FAV-02 | Tapping a favourite opens review with its preset values, no AI estimate; no Health write until confirmed (REV-01). | 04 | `CaptureViewModel.submitFavorite` |
+
 ## Non-functional
 
 | ID | Requirement | Phase | Where |
