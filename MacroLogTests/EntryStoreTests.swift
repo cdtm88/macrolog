@@ -104,4 +104,28 @@ struct EntryStoreTests {
         try context.save()
         #expect(store.pendingReviewEntry() == nil)
     }
+
+    /// A corrupt store file must fail container creation (the app degrades to
+    /// an explicit error state rather than crash-looping), and resetting must
+    /// allow a fresh container at the same URL.
+    @Test func corruptStoreThrowsAndResetRecovers() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("default.store")
+        try Data("definitely not a sqlite database".utf8).write(to: url)
+
+        #expect(throws: (any Error).self) {
+            _ = try StoreBootstrap.makeContainer(at: url)
+        }
+
+        StoreBootstrap.reset(at: url)
+        let container = try StoreBootstrap.makeContainer(at: url)
+        container.mainContext.insert(FoodEntry(name: "recovered",
+                                               macros: .zero,
+                                               capturedAt: Date(),
+                                               status: .pendingReview))
+        try container.mainContext.save()
+    }
 }

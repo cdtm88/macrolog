@@ -455,7 +455,16 @@ final class CaptureViewModel {
         reviewEntry = nil
         reviewImage = nil
         reviewBaseline = nil
-        if !isEditingExisting { pendingEntry = nil; captureState = .idle }
+        if !isEditingExisting {
+            pendingEntry = nil
+            captureState = .idle
+            // The photo has served its purpose once its review closes — drop
+            // the few MB rather than hold it for the app's lifetime. Estimation
+            // failures never reach here, so retry-after-failure (EST-05) still
+            // has it. The editing branch keeps it: an unrelated estimate may
+            // still be pending underneath the edit.
+            lastImage = nil
+        }
         isEditingExisting = false
     }
 

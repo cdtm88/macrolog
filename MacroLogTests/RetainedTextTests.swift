@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 import SwiftData
+import UIKit
 @testable import MacroLog
 
 /// A typed description must survive a failed estimate (so a repeat "couldn't
@@ -60,6 +61,41 @@ struct RetainedTextTests {
             #expect(model.estimationError == .api(status: 500, message: "overloaded"))
             #expect(model.lastText == "mystery grain bowl")
             #expect(!model.needsTextAfterPhoto) // no photo was part of the failure
+        }
+    }
+
+    /// The retained photo must survive an estimation failure (EST-05 retry)
+    /// but be released once its review closes — it would otherwise sit in
+    /// memory for the app's lifetime.
+    @Test func retainedPhotoSurvivesFailureAndClearsWhenReviewCloses() throws {
+        let container = try ModelContainer(
+            for: FoodEntry.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let model = CaptureViewModel(context: container.mainContext)
+
+        try withExtendedLifetime(container) {
+            let photo = UIImage(systemName: "photo")!
+            model.submitPhoto(photo)
+            model.workTask?.cancel()
+
+            // Failure keeps the photo so retry doesn't need a re-capture.
+            model.handleEstimationError(.api(status: 500, message: "overloaded"))
+            #expect(model.lastImage != nil)
+
+            // Estimate lands, review opens with the photo, discard closes it —
+            // both the review's copy and the retained original are released.
+            model.handleEstimate(
+                MacroEstimate(name: "Toast",
+                              macros: Macros(kcal: 200, protein: 6, carbs: 30, fat: 5)),
+                capturedAt: Date())
+            // The failure left the text sheet open, so review presentation is
+            // deferred to the sheet's onDismiss — fire it as the UI would.
+            model.sheetDidDismiss()
+            let entry = try #require(model.reviewEntry)
+            #expect(model.reviewImage != nil)
+            model.discard(entry)
+            #expect(model.reviewImage == nil)
+            #expect(model.lastImage == nil)
         }
     }
 }
