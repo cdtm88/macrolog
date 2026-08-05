@@ -44,10 +44,17 @@ struct AnthropicClient {
     /// When `outputSchema` is provided it is sent as a structured-output format,
     /// so the response text is guaranteed to be JSON matching the schema (EST-03
     /// — no unparseable responses).
+    /// `thinking` is sent explicitly rather than left to the model default: on
+    /// Sonnet 5 an omitted `thinking` runs adaptive anyway, but on the Opus
+    /// fallback (D-04) it would run with thinking off — the same code would
+    /// quietly behave differently on the documented escalation path. Note that
+    /// `maxTokens` caps thinking *and* the answer together, so it needs headroom
+    /// well beyond the size of the JSON itself.
     func complete(model: String,
                   system: String,
                   content: [Content],
-                  maxTokens: Int = 512,
+                  maxTokens: Int = 2048,
+                  adaptiveThinking: Bool = true,
                   outputSchema: [String: Any]? = nil) async throws -> String {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
@@ -64,6 +71,9 @@ struct AnthropicClient {
                 ["role": "user", "content": content.map(\.json)]
             ]
         ]
+        if adaptiveThinking {
+            body["thinking"] = ["type": "adaptive"]
+        }
         if let outputSchema {
             body["output_config"] = [
                 "format": ["type": "json_schema", "schema": outputSchema]
@@ -101,6 +111,15 @@ struct AnthropicClient {
         // the user sees a named cause rather than a silent zero.
         if let stop = object["stop_reason"] as? String, stop == "refusal" {
             throw EstimationError.api(status: 200, message: "The request was declined.")
+        }
+        // Truncation is also a valid HTTP 200, and leaves half a JSON object
+        // behind. Without this it would surface as "unexpected response", which
+        // points the user at the wrong cause — the fix is more headroom, not a
+        // retry. Thinking tokens share the max_tokens budget, so this is the
+        // failure to watch if the budget is ever tightened.
+        if let stop = object["stop_reason"] as? String, stop == "max_tokens" {
+            throw EstimationError.api(status: 200,
+                                      message: "The estimate was cut off before it finished.")
         }
         guard let content = object["content"] as? [[String: Any]] else {
             throw EstimationError.unparseable

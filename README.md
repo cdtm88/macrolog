@@ -154,11 +154,29 @@ This is the top risk. Follow the order exactly — the pre-fill is order-depende
 Per PRD decision D-04, estimation uses the **latest Sonnet** with **Opus as a
 fallback** if quality proves inadequate. The model ids live in
 `EstimationPrompt.swift` (`primaryModel` / `fallbackModel`) — swap the constant
-to escalate. The prompt is fixed in a single source constant and accounts for
-oils, butter, and sauces. Responses are constrained by a structured-output JSON
-schema, so the six numbers always decode or fail loudly — never silent zeros.
-When a photo can't be identified, the supplementary text description is sent
-*with* the photo, which still carries portion-size signal.
+to escalate. Responses are constrained by a structured-output JSON schema, so
+the six numbers always decode or fail loudly — never silent zeros. When a photo
+can't be identified, the supplementary text description is sent *with* the
+photo, which still carries portion-size signal.
+
+The prompt is fixed in a single source constant (EST-02) and frames the model as
+a practising dietitian: a component-by-component estimation procedure, physical
+scale references for judging portion size from a photo, and explicit corrections
+for the biases that dominate real error — invisible cooking fat, absorbed oil,
+restaurant portion inflation, and sodium tracking preparation rather than
+appearance.
+
+Adaptive thinking is requested **explicitly** rather than left to the model
+default. Sonnet 5 thinks by default when `thinking` is omitted but the Opus
+fallback does not, so leaving it implicit would mean the escalation path quietly
+changed behaviour. `max_tokens` covers thinking *and* the answer together, so it
+carries headroom well beyond the size of the JSON; a budget too tight surfaces
+as an explicit "cut off before it finished" error rather than a parse failure.
+
+**Prompt caching is deliberately not used.** The system prompt sits below the
+minimum cacheable prefix, and at a few meals a day the cache would expire
+between calls — every request would pay the write premium and collect no reads,
+making it more expensive, not less.
 
 ## Notes
 
