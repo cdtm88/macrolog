@@ -24,7 +24,7 @@ struct RootView: View {
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .task { await model.onLaunch() }
         // Day-boundary maintenance must also run when the app foregrounds
-        // across midnight without a cold launch (ENT-04, WID-02).
+        // across midnight without a cold launch (WID-02).
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { model.onBecameActive() }
         }

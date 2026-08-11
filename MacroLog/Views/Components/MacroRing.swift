@@ -22,7 +22,7 @@ struct MacroRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Theme.groupedBackground, lineWidth: lineWidth)
+                .stroke(Theme.ringTrack, lineWidth: lineWidth)
 
             ForEach(Array(arcs().enumerated()), id: \.offset) { _, arc in
                 Circle()
@@ -37,6 +37,9 @@ struct MacroRing: View {
                         .font(.system(size: size * 0.23, weight: .heavy))
                         .foregroundStyle(Theme.ink)
                         .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                        .frame(maxWidth: size * 0.72)
                     Text("KCAL")
                         .font(.system(size: size * 0.085, weight: .bold))
                         .tracking(1)

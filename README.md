@@ -78,10 +78,11 @@ Scripts/             App-icon generator
 
 ## Tests
 
-Unit tests (Swift Testing) cover estimation decoding, the day-boundary/purge
-rules, widget snapshot rollover, portion scaling, favourites, store-corruption
-recovery, and the bridge queues (day collapse, deletion propagation, bounding,
-failure classification against a stubbed session). Run them before every
+Unit tests (Swift Testing) cover estimation decoding, the day-boundary and
+history-bound rules, widget snapshot rollover, portion scaling, favourites, store-corruption
+recovery, the bridge queues (day collapse, deletion propagation, bounding,
+failure classification against a stubbed session), the reminder planner
+(suppression window, horizon, shortfall copy), and settings defaults. Run them before every
 commit:
 
 ```sh
@@ -105,11 +106,24 @@ xcodebuild test -project MacroLog.xcodeproj -scheme MacroLog \
   Health" writes one `HKCorrelation` of type `.food`, timestamped to capture
   time (so a late dinner confirmed after midnight lands on the right day).
 - **Today** (tap the ring pill) lists today's meals; edit or delete, both
-  reconciling the Health sample. Yesterday's written entries are purged locally
-  — Whoop is the history view.
+  reconciling the Health sample. Chevrons beside the title — or a horizontal
+  swipe — page back through past days in the same layout, as far as the
+  earliest logged entry. Past days are read-only (bar the Health-write retry);
+  entries are kept locally so history survives without any extra effort, and
+  a past day's protein row gets a green tick when it met the current target.
+  Swiping any meal row (leading) saves it as a favourite — a repeat meal never
+  needs a second estimate.
 - The **widget** shows today's running calories/protein/carbs/fat and opens
   capture when tapped. It follows the system appearance (light and dark) even
-  though the app itself is light-only.
+  though the app itself is light-only. A Lock Screen circular gauge shows
+  protein progress toward the daily target.
+- **Settings** (gear icon on capture) holds a daily protein target (default
+  160 g, shown as "120 / 160g" on the Today header and the medium widget,
+  green once met) and optional **meal reminders**: up to three times a day,
+  each skipped automatically when a meal was logged in the 2 hours before it,
+  with the day's last reminder reporting the protein shortfall. Local
+  notifications only — the permission prompt appears only when the toggle is
+  first enabled, never at launch.
 
 Fibre and sodium are captured, editable, and written to Health, but stay off the
 glanceable surfaces — the Today list and the widget show the four macros Whoop

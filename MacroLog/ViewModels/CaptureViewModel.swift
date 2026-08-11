@@ -1,6 +1,8 @@
 import SwiftUI
 import SwiftData
 import UIKit
+import UserNotifications
+import WidgetKit
 
 /// Drives the whole logging flow: capture → estimate → review → write to Health,
 /// plus the entry list's edit and delete. One instance lives for the app's
@@ -16,6 +18,7 @@ final class CaptureViewModel {
     var captureState: CaptureState = .idle
     var isShowingText = false
     var isShowingList = false
+    var isShowingSettings = false
 
     /// The entry currently in review (either a fresh pending estimate or an
     /// existing entry being edited).
@@ -74,6 +77,10 @@ final class CaptureViewModel {
     private let coachRelay = CoachRelay()
     private let weightBridge = WeightBridge()
 
+    /// Executes the reminder plan. Inert until reminders are enabled in
+    /// settings; its permission prompt fires only from the settings toggle.
+    private let reminders = ReminderScheduler()
+
     /// One-time bridge hint (HB-09) — the only thing a bridge may ever say.
     var bridgeNotice: String?
     private var bridgeNoticeTask: Task<Void, Never>?
@@ -84,7 +91,7 @@ final class CaptureViewModel {
     private var toastTask: Task<Void, Never>?
     private var longRunTask: Task<Void, Never>?
 
-    /// Start-of-day the last purge/snapshot maintenance ran for. Lets foreground
+    /// Start-of-day the last snapshot maintenance ran for. Lets foreground
     /// activation detect a midnight rollover without a cold launch.
     private var lastMaintenanceDayStart: Date?
 
@@ -100,18 +107,22 @@ final class CaptureViewModel {
         runDayMaintenance()
         recoverPendingEntry()
         kickBridges()
+        rearmReminders()
     }
 
     /// Called whenever the app returns to the foreground. iOS keeps the app
     /// resident for days, so day-boundary maintenance can't live only in
-    /// `onLaunch` — after a midnight rollover this re-runs the purge and
-    /// republishes the widget snapshot (ENT-04, WID-02). Also re-reads the
+    /// `onLaunch` — after a midnight rollover this republishes the widget
+    /// snapshot for the new day (WID-02). Also re-reads the
     /// Health permission state, which may have changed in Settings.
     func onBecameActive() {
         if health.isAvailable {
             healthState = health.isDenied ? .denied : .ok
         }
         kickBridges()
+        // Every foreground: tops the 7-day horizon back up, clears delivered
+        // banners, and refreshes suppression against today's entries.
+        rearmReminders()
         let dayStart = Calendar.current.startOfDay(for: Date())
         guard dayStart != lastMaintenanceDayStart else { return }
         runDayMaintenance()
@@ -133,9 +144,11 @@ final class CaptureViewModel {
         }
     }
 
+    /// Republishes the widget snapshot for the new day. Entries are no longer
+    /// purged at the boundary — history is retained for the day-paged list
+    /// (2026-08-05, supersedes ENT-04).
     private func runDayMaintenance() {
         lastMaintenanceDayStart = Calendar.current.startOfDay(for: Date())
-        store.purgeOldWrittenEntries()
         store.refreshTodaySnapshot()
     }
 
@@ -419,6 +432,7 @@ final class CaptureViewModel {
             showToast(entry.macroSummary)
             closeReviewToCapture()
             store.refreshTodaySnapshot()
+            rearmReminders()
         } catch {
             // Never silently mark as logged (HK-06). Escalate after two
             // consecutive failures (HK-08).
@@ -431,6 +445,9 @@ final class CaptureViewModel {
             healthError = (error as? HealthKitError) ?? .writeFailed(error.localizedDescription)
             closeReviewToCapture()
             store.refreshTodaySnapshot()
+            // An .unwritten entry still counts toward today — suppression and
+            // shortfall copy must reflect it.
+            rearmReminders()
         }
     }
 
@@ -447,6 +464,7 @@ final class CaptureViewModel {
                 try? context.save()
                 // Totals shown on capture/list/widget included the edits.
                 store.refreshTodaySnapshot()
+                rearmReminders()
             }
         } else {
             context.delete(entry)
@@ -500,6 +518,7 @@ final class CaptureViewModel {
                 captureState = .idle
             }
             store.refreshTodaySnapshot()
+            rearmReminders()
         }
     }
 
@@ -508,9 +527,52 @@ final class CaptureViewModel {
         Task { await confirmAsync(entry) }
     }
 
+    // MARK: - Save as favourite
+
+    enum FavoriteSaveResult { case saved, updated, full }
+
+    /// Saves a logged meal's values as a one-tap favourite (swipe action on
+    /// the day list). A name match (case-insensitive) updates that favourite's
+    /// macros instead of duplicating it; otherwise the meal is appended,
+    /// subject to `Favorite.maxCount`.
+    @discardableResult
+    func saveAsFavorite(_ entry: FoodEntry) -> FavoriteSaveResult {
+        let favorites = (try? context.fetch(FetchDescriptor<Favorite>())) ?? []
+        let name = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let existing = favorites.first(where: {
+            $0.name.compare(name, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        }) {
+            existing.macros = entry.macros
+            try? context.save()
+            return .updated
+        }
+        guard favorites.count < Favorite.maxCount else { return .full }
+        let nextOrder = (favorites.map(\.sortOrder).max() ?? -1) + 1
+        context.insert(Favorite(name: name, macros: entry.macros, sortOrder: nextOrder))
+        try? context.save()
+        return .saved
+    }
+
     // MARK: - Derived data for views
 
+    /// Writes all-history daily totals to a temp CSV and returns its URL for
+    /// the settings sheet's ShareLink; nil when the write fails.
+    func dailyTotalsExportURL() -> URL? {
+        let csv = DailyTotalsExport.csv(days: store.allConfirmedDailyTotals())
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MacroLog-daily-totals.csv")
+        do {
+            try Data(csv.utf8).write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
     func todaysEntries() -> [FoodEntry] { store.todaysConfirmedEntries() }
+
+    /// Earliest day reachable in the day-paged list.
+    func earliestDayStart() -> Date { store.earliestConfirmedDayStart() }
 
     func todaysTotals() -> Macros {
         store.todaysConfirmedEntries().reduce(Macros.zero) { $0 + $1.macros }
@@ -541,6 +603,88 @@ final class CaptureViewModel {
             try? await Task.sleep(for: .seconds(6))
             self?.bridgeNotice = nil
         }
+    }
+
+    // MARK: - Meal reminders / settings
+
+    /// Recomputes the pending reminder set (pure planner) and hands it to the
+    /// scheduler as a detached fire-and-forget task — like the bridges, never
+    /// awaited on the logging path. Covers both families: meal reminders and
+    /// the daily protein check.
+    private func rearmReminders() {
+        let entries = store.todaysConfirmedEntries()
+        let todayProtein = entries.reduce(0) { $0 + $1.protein }
+        let proteinTarget = SettingsStore.proteinTarget()
+        let mealPlan = ReminderPlanner.plan(
+            enabled: SettingsStore.remindersEnabled(),
+            times: SettingsStore.reminderTimes(),
+            todayEntryTimes: entries.map(\.capturedAt),
+            todayProtein: todayProtein,
+            proteinTarget: proteinTarget)
+        let proteinPlan = ReminderPlanner.proteinPlan(
+            enabled: SettingsStore.proteinReminderEnabled(),
+            timeMinutes: SettingsStore.proteinReminderTime(),
+            todayProtein: todayProtein,
+            proteinTarget: proteinTarget)
+        Task { [reminders] in await reminders.sync(plan: mealPlan + proteinPlan) }
+    }
+
+    /// Hooked to the settings sheet's `onDismiss`: settings may have changed,
+    /// so re-arm reminders and refresh the widget (it reads the protein target
+    /// directly from the shared defaults).
+    func settingsSheetDismissed() {
+        rearmReminders()
+        WidgetCenter.shared.reloadAllTimelines()
+        sheetDidDismiss()
+    }
+
+    /// Turns meal reminders on. Returns whether notifications are actually
+    /// authorized (drives the settings sheet's warning row).
+    func enableReminders() async -> Bool {
+        let authorized = await ensureReminderAuthorization()
+        SettingsStore.setRemindersEnabled(true)
+        if SettingsStore.reminderTimes().isEmpty {
+            SettingsStore.setReminderTimes([12 * 60 + 30, 19 * 60]) // 12:30, 19:00
+        }
+        rearmReminders()
+        return authorized
+    }
+
+    func disableReminders() {
+        SettingsStore.setRemindersEnabled(false)
+        rearmReminders() // empty plan → clears pending requests
+    }
+
+    /// Turns the daily protein check on — same authorization path as the meal
+    /// toggle.
+    func enableProteinReminder() async -> Bool {
+        let authorized = await ensureReminderAuthorization()
+        SettingsStore.setProteinReminderEnabled(true)
+        rearmReminders()
+        return authorized
+    }
+
+    func disableProteinReminder() {
+        SettingsStore.setProteinReminderEnabled(false)
+        rearmReminders()
+    }
+
+    /// The notification permission prompt fires here and only here — from a
+    /// settings toggle, never at launch, so it can't stack onto the HealthKit
+    /// prompt.
+    private func ensureReminderAuthorization() async -> Bool {
+        switch await reminders.authorizationStatus() {
+        case .notDetermined:
+            return await reminders.requestAuthorization()
+        case .authorized, .provisional, .ephemeral:
+            return true
+        default:
+            return false
+        }
+    }
+
+    func reminderAuthorizationStatus() async -> UNAuthorizationStatus {
+        await reminders.authorizationStatus()
     }
 
     // MARK: - Long-running hint

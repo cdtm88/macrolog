@@ -1,9 +1,11 @@
 import Foundation
 import SwiftData
 
-/// A single logged eating occasion. This is the only persisted model in the app
-/// (PRD decision D-02): SwiftData holds today's entries plus any pending or
-/// unwritten items, and nothing else.
+/// A single logged eating occasion. This is the only entry model in the app
+/// (PRD decision D-02): SwiftData retains every confirmed entry indefinitely
+/// for the day-paged history (2026-08-05, superseding the original
+/// today-only retention) plus any pending or unwritten items. Photos are
+/// never persisted (SEC-03), so the store stays tiny.
 @Model
 final class FoodEntry {
     /// Stable identity, also used as the local <-> Health reconciliation key in

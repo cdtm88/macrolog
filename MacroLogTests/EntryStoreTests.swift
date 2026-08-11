@@ -3,8 +3,10 @@ import Foundation
 import SwiftData
 @testable import MacroLog
 
-/// Day-boundary and retention rules over the SwiftData store (ENT-01/04,
-/// CAP-05): purge only old *written* entries, never anything unwritten.
+/// Day-boundary and history rules over the SwiftData store (ENT-01, CAP-05):
+/// entries are retained indefinitely for the day-paged history, today's
+/// queries stay scoped to today, and the earliest confirmed day bounds the
+/// back navigation.
 @MainActor
 struct EntryStoreTests {
 
@@ -32,20 +34,30 @@ struct EntryStoreTests {
         return entry
     }
 
-    @Test func purgeDeletesOnlyOldWrittenEntries() throws {
+    @Test func earliestConfirmedDayStartFindsOldestConfirmedDay() throws {
         let (store, container) = try makeStore()
         let context = container.mainContext
         let now = Date()
-        _ = insert(context, name: "old written", daysAgo: 1, status: .written, now: now)
-        _ = insert(context, name: "old unwritten", daysAgo: 1, status: .unwritten, now: now)
-        _ = insert(context, name: "old pending", daysAgo: 2, status: .pendingReview, now: now)
-        _ = insert(context, name: "today written", daysAgo: 0, status: .written, now: now)
+        _ = insert(context, name: "old written", daysAgo: 5, status: .written, now: now)
+        _ = insert(context, name: "recent unwritten", daysAgo: 2, status: .unwritten, now: now)
+        // Pending entries don't appear in day lists, so they don't extend the
+        // navigable range.
+        _ = insert(context, name: "ancient pending", daysAgo: 9, status: .pendingReview, now: now)
         try context.save()
 
-        store.purgeOldWrittenEntries(now: now)
+        let expected = Calendar.current.startOfDay(
+            for: Calendar.current.date(byAdding: .day, value: -5, to: now)!)
+        #expect(store.earliestConfirmedDayStart(now: now) == expected)
+    }
 
-        let remaining = try context.fetch(FetchDescriptor<FoodEntry>()).map(\.name).sorted()
-        #expect(remaining == ["old pending", "old unwritten", "today written"])
+    @Test func earliestConfirmedDayStartIsTodayWhenNoConfirmedEntries() throws {
+        let (store, container) = try makeStore()
+        let context = container.mainContext
+        let now = Date()
+        _ = insert(context, name: "pending only", daysAgo: 3, status: .pendingReview, now: now)
+        try context.save()
+
+        #expect(store.earliestConfirmedDayStart(now: now) == Calendar.current.startOfDay(for: now))
     }
 
     @Test func todaysConfirmedEntriesExcludePendingAndYesterday() throws {
@@ -103,6 +115,27 @@ struct EntryStoreTests {
         _ = insert(context, name: "written", daysAgo: 0, status: .written, now: Date())
         try context.save()
         #expect(store.pendingReviewEntry() == nil)
+    }
+
+    @Test func allConfirmedDailyTotalsGroupsByDayAndExcludesPending() throws {
+        let (store, container) = try makeStore()
+        let context = container.mainContext
+        let now = Date()
+        _ = insert(context, name: "old a", daysAgo: 3, status: .written, now: now)
+        _ = insert(context, name: "old b", daysAgo: 3, status: .unwritten, now: now)
+        _ = insert(context, name: "today", daysAgo: 0, status: .written, now: now)
+        _ = insert(context, name: "pending", daysAgo: 3, status: .pendingReview, now: now)
+        try context.save()
+
+        let totals = store.allConfirmedDailyTotals()
+        #expect(totals.count == 2)
+        // Oldest first; every insert carries 100 kcal / 10 g protein.
+        #expect(totals[0].entryCount == 2)
+        #expect(totals[0].totals.kcal == 200)
+        #expect(totals[0].totals.protein == 20)
+        #expect(totals[1].entryCount == 1)
+        #expect(totals[1].totals.kcal == 100)
+        #expect(totals[0].dayStart < totals[1].dayStart)
     }
 
     /// A corrupt store file must fail container creation (the app degrades to

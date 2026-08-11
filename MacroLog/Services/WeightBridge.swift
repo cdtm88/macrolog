@@ -151,8 +151,8 @@ actor WeightBridge {
     /// arrive in context, not at first launch. HB-12 forbids any weight UI,
     /// so the only context this app has is proven use — the first-ever sync
     /// (the one that asks) waits until at least one meal has been confirmed.
-    /// Once asked, every foreground syncs regardless: the local store purges
-    /// written entries daily, so mornings legitimately start with none.
+    /// Once asked, every foreground syncs regardless: the meal check covers
+    /// today only, so mornings legitimately start with none.
     static func shouldSync(authRequested: Bool, hasConfirmedMeal: Bool) -> Bool {
         authRequested || hasConfirmedMeal
     }

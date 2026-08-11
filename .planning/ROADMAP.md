@@ -44,3 +44,78 @@ provisional pending the checkpoint.
   there is still no server component (ARCH-01), but the app now writes
   directly to two external services in addition to the Anthropic API —
   accepted deviations, not oversights.
+
+- **Protein target & meal reminders** (added 2026-08-04, post-adherence-week
+  field feedback): a user-set daily protein target (default 160 g, stored in
+  the shared `SettingsStore`, shown as "120 / 160g" on the Today header and
+  the medium widget) and smart-suppressed local reminders (up to three
+  times/day; a reminder is skipped when a meal was logged in the 2 hours
+  before it; the last reminder of the day carries protein-shortfall copy).
+  Both are configured in a new settings sheet (gear icon on capture). This
+  deliberately supersedes two PRD positions: "no notifications in v1" (D-06)
+  and "no goals" (§4 out-of-scope). Scope stays narrow: local notifications
+  only — no push, no background modes, no BGTaskScheduler — and the feature is
+  inert until enabled in settings, with the permission prompt firing only from
+  that toggle so it never stacks onto the HealthKit prompt (the HB-08
+  pattern). The target is a single scalar, not goal tracking — no history, no
+  streaks, no other macro targets. Scheduling logic is pure
+  (`ReminderPlanner`) with one-shot triggers over a 7-day horizon, replaced on
+  every foreground/confirm/delete; shortfall copy is frozen at plan time,
+  which is self-consistent because logging is in-app-only.
+
+- **Day history** (added 2026-08-05, user-requested): the Today sheet now
+  pages by day — chevrons flanking the title, or a horizontal swipe, walk back
+  through past days (identical layout to today) as far as the earliest logged
+  entry. To enable it, the ENT-04 day-boundary purge was removed: confirmed
+  entries are retained indefinitely in SwiftData, deliberately superseding
+  ENT-04 and widening D-02's "today plus pending only" retention. This does
+  **not** reopen §4's "no history *tracking*": there are no trends, charts,
+  streaks, or goals — just the existing day view pointed at an older date.
+  Storage stays trivial because photos are never persisted (SEC-03). Past
+  days are read-only (no edit/delete; Health/coach reconciliation on old
+  dates stays out of scope) except the HK-06 write retry, which is date-safe
+  because writes are timestamped to `capturedAt`. Today's queries, the widget
+  snapshot, reminders, and both bridges are unaffected — all were already
+  scoped to today. The current protein target is shown only on today's page,
+  since past days predate no particular target value.
+
+- **Swipe-to-favourite, Lock Screen widget, past-day protein tick** (added
+  2026-08-05, follow-ups from the post-history review):
+  - Any day-list row swipes (leading) to save that meal as a favourite —
+    a name match updates the existing favourite, otherwise appended under the
+    `Favorite.maxCount` cap with an explicit "full" alert. Serves phase 04's
+    friction goal the same way Favourites itself did; a pure read of the
+    entry, so past days' read-only rule holds. Delete moved from `.onDelete`
+    to an explicit trailing swipe action (unchanged behaviour, today only).
+  - The widget gains `.accessoryCircular`: a Lock Screen gauge of protein
+    progress toward the target (the actionable number; calories stay on the
+    Home Screen families). Same passive-nudge role as WID-01..04, no new data
+    paths — it reads the existing snapshot and `SettingsStore`.
+  - Past days in the history list show a green tick on the protein row when
+    that day's total meets the *current* target. Deliberately not a red miss
+    marker and not per-day target history — extends the protein-target
+    carve-out without adding streaks, charts, or stored goals.
+
+- **kcal target, CSV export, protein check, day-list sections, % removal**
+  (added 2026-08-11, field feedback batch):
+  - A daily calorie target (default 2500 kcal, `SettingsStore`), the same
+    carve-out class as the protein target: a single scalar with today-only
+    progress ("1430 / 2500 kcal" row, past-day met-tick, widget ring caption
+    "/ 2500 KCAL"). Display-only — it does not drive reminders.
+  - A CSV export of daily totals (`DailyTotalsExport`, share link in
+    settings): date + the six macros + entry count, one row per logged day,
+    all history. Daily granularity only — no meal-level rows — and a plain
+    temp-file share, so it stays raw data out, not trends/charts in-app, and
+    adds no backend or new data path.
+  - A dedicated daily protein check (`ReminderPlanner.proteinPlan`, default
+    off, default 20:00): fires if the protein target is unmet, deliberately
+    *not* suppressed by recent meal logs — logging a low-protein meal
+    silencing the protein nudge was the observed failure. Same 7-day one-shot
+    horizon, own id prefix (`proteinreminder.`), same settings-toggle-only
+    permission path.
+  - The day list groups meals into Morning / Lunch / Evening sections
+    (< 11:00 / 11:00–16:59 / 17:00+, `MealPeriod`), newest section first —
+    purely visual grouping.
+  - The macro-share % figures (4/4/9 weighting) were removed from the Today
+    header and widget rows (and `Macros`); the ring already conveys the
+    split, and the numbers read as noise in the field.

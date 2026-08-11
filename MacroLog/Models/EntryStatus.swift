@@ -4,7 +4,7 @@ import Foundation
 /// SwiftData so the model stays trivially migratable.
 enum EntryStatus: String, Codable, CaseIterable {
     /// Estimate returned and awaiting the user's review. Nothing has been
-    /// written to Health. Never purged regardless of age (ENT-04, CAP-05).
+    /// written to Health; survives relaunches until reviewed (CAP-05).
     case pendingReview
 
     /// User confirmed, but the Health write failed. The entry is recoverable

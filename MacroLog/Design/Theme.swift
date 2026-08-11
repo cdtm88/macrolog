@@ -14,6 +14,9 @@ enum Theme {
     static let secondary = Color(hex: 0x8E8E93)
     static let groupedBackground = Color(hex: 0xF2F2F7)
     static let card = Color.white
+    /// Unfilled ring track — must stay visible on both `card` and
+    /// `groupedBackground`, or a zero-macro day makes the ring vanish.
+    static let ringTrack = Color(hex: 0xE3E3E8)
 
     /// The dark viewfinder gradient behind the camera.
     static let viewfinderTop = Color(hex: 0x3A3A40)

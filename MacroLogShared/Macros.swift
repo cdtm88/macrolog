@@ -37,22 +37,6 @@ public struct Macros: Codable, Equatable, Sendable {
                sodium: lhs.sodium + rhs.sodium)
     }
 
-    // MARK: - Calorie split
-
-    /// Each macro's share of the calories attributable to macros (protein and
-    /// carbs ×4 kcal/g, fat ×9) — the same weighting the ring segments use.
-    /// `nil` when nothing has been logged, so views can omit the figure rather
-    /// than render a meaningless 0%.
-    public var proteinPercent: Int? { percent(of: protein * 4) }
-    public var carbsPercent: Int? { percent(of: carbs * 4) }
-    public var fatPercent: Int? { percent(of: fat * 9) }
-
-    private func percent(of calories: Double) -> Int? {
-        let total = protein * 4 + carbs * 4 + fat * 9
-        guard total > 0 else { return nil }
-        return Int((calories / total * 100).rounded())
-    }
-
     // MARK: - Codable
 
     private enum CodingKeys: String, CodingKey {

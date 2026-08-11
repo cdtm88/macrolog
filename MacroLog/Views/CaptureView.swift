@@ -50,6 +50,9 @@ struct CaptureView: View {
         .sheet(isPresented: $model.isShowingList, onDismiss: { model.sheetDidDismiss() }) {
             TodayListView(model: model)
         }
+        .sheet(isPresented: $model.isShowingSettings, onDismiss: { model.settingsSheetDismissed() }) {
+            SettingsView(model: model)
+        }
         // Item-based presentation: the cover's content is unconditional, so the
         // hosting controller always lays it out full-screen (an `if let` inside
         // `fullScreenCover(isPresented:)` can leave the view floating mid-screen).
@@ -74,18 +77,36 @@ struct CaptureView: View {
 
     // MARK: - Top bar
 
+    /// Settings on the left edge, Today pill on the right, wordmark centered —
+    /// utility control and data control at opposite thumb corners, title
+    /// balanced between them (a ZStack so the title stays truly centered
+    /// regardless of the two sides' widths).
     private var topBar: some View {
-        HStack {
+        ZStack {
             Text("MacroLog")
                 .font(.system(.title3, weight: .heavy))
                 .foregroundStyle(Theme.ink)
-            Spacer()
-            Button { model.isShowingList = true } label: { todayPill }
-                .buttonStyle(.plain)
+            HStack {
+                Button { model.isShowingSettings = true } label: { settingsChip }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Settings")
+                Spacer()
+                Button { model.isShowingList = true } label: { todayPill }
+                    .buttonStyle(.plain)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
         .padding(.bottom, 12)
+    }
+
+    private var settingsChip: some View {
+        Image(systemName: "gearshape.fill")
+            .font(.system(.subheadline, weight: .semibold))
+            .foregroundStyle(Theme.secondary)
+            .frame(width: 44, height: 44)
+            .background(Theme.card, in: Circle())
+            .shadow(color: .black.opacity(0.06), radius: 3, y: 1)
     }
 
     private var todayPill: some View {

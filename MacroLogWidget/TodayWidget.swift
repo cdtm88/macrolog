@@ -14,19 +14,29 @@ private enum W {
 struct MacroEntry: TimelineEntry {
     let date: Date
     let snapshot: TodaySnapshot
+    /// Read from the shared defaults at timeline-generation time — settings,
+    /// not day-scoped totals, so they survive the snapshot's midnight zeroing.
+    let proteinTarget: Double
+    let kcalTarget: Double
 }
 
 struct TodayProvider: TimelineProvider {
     func placeholder(in context: Context) -> MacroEntry {
-        MacroEntry(date: Date(), snapshot: .empty)
+        MacroEntry(date: Date(), snapshot: .empty,
+                   proteinTarget: SettingsStore.proteinTarget(),
+                   kcalTarget: SettingsStore.kcalTarget())
     }
 
     func getSnapshot(in context: Context, completion: @escaping (MacroEntry) -> Void) {
-        completion(MacroEntry(date: Date(), snapshot: TodaySnapshotStore.read()))
+        completion(MacroEntry(date: Date(), snapshot: TodaySnapshotStore.read(),
+                              proteinTarget: SettingsStore.proteinTarget(),
+                              kcalTarget: SettingsStore.kcalTarget()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<MacroEntry>) -> Void) {
-        let entry = MacroEntry(date: Date(), snapshot: TodaySnapshotStore.read())
+        let entry = MacroEntry(date: Date(), snapshot: TodaySnapshotStore.read(),
+                               proteinTarget: SettingsStore.proteinTarget(),
+                               kcalTarget: SettingsStore.kcalTarget())
         // Refresh at next local midnight so totals reset to zero for the new day
         // even if the app hasn't run (WID-04). Live updates come from the app's
         // WidgetCenter reload on each confirmed entry (WID-02).
@@ -46,6 +56,7 @@ struct TodayWidgetView: View {
     var body: some View {
         Group {
             switch family {
+            case .accessoryCircular: circular
             case .systemSmall: small
             default: medium
             }
@@ -54,22 +65,35 @@ struct TodayWidgetView: View {
         .widgetURL(SharedConstants.captureURL) // tap opens capture (WID-03)
     }
 
+    /// Lock Screen ring: protein progress toward the target — the day's
+    /// actionable number; calories live on the Home Screen families. Renders
+    /// in the system's vibrant/tinted style, so no fixed hues here.
+    private var circular: some View {
+        Gauge(value: min(totals.protein, entry.proteinTarget),
+              in: 0...max(entry.proteinTarget, 1)) {
+            Text("PRO")
+        } currentValueLabel: {
+            Text("\(Int(totals.protein.rounded()))")
+        }
+        .gaugeStyle(.accessoryCircular)
+    }
+
     // The calorie readout lives inside the ring only — no duplicate label.
     private var small: some View {
-        WidgetRing(macros: totals, size: 84, lineWidth: 11)
+        WidgetRing(macros: totals, size: 84, lineWidth: 11, kcalTarget: entry.kcalTarget)
             .padding(12)
     }
 
     private var medium: some View {
         HStack(spacing: 18) {
-            WidgetRing(macros: totals, size: 84, lineWidth: 11)
+            WidgetRing(macros: totals, size: 84, lineWidth: 11, kcalTarget: entry.kcalTarget)
             VStack(alignment: .leading, spacing: 8) {
                 Text("TODAY")
                     .font(.system(size: 10, weight: .bold)).tracking(0.6)
                     .foregroundStyle(.secondary)
-                macroLine("Protein", totals.protein, W.protein, percent: totals.proteinPercent)
-                macroLine("Carbs", totals.carbs, W.carbs, percent: totals.carbsPercent)
-                macroLine("Fat", totals.fat, W.fat, percent: totals.fatPercent)
+                macroLine("Protein", totals.protein, W.protein, target: entry.proteinTarget)
+                macroLine("Carbs", totals.carbs, W.carbs)
+                macroLine("Fat", totals.fat, W.fat)
             }
             Spacer(minLength: 0)
         }
@@ -77,26 +101,31 @@ struct TodayWidgetView: View {
     }
 
     private func macroLine(_ label: String, _ value: Double, _ color: Color,
-                           percent: Int?) -> some View {
+                           target: Double? = nil) -> some View {
         HStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 7, height: 7)
             Text(label).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
             Spacer()
-            if let percent {
-                Text("\(percent)%")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.secondary)
+            if let target {
+                Text("\(Int(value.rounded()))/\(Int(target))g")
+                    .font(.system(size: 11, weight: .bold)).foregroundStyle(.primary)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            } else {
+                Text("\(Int(value.rounded()))g")
+                    .font(.system(size: 11, weight: .bold)).foregroundStyle(.primary)
+                    .lineLimit(1).minimumScaleFactor(0.7)
             }
-            Text("\(Int(value.rounded()))g").font(.system(size: 11, weight: .bold)).foregroundStyle(.primary)
         }
     }
 }
 
-/// A compact copy of the app's macro ring for the widget.
+/// A compact copy of the app's macro ring for the widget. When `kcalTarget`
+/// is set the centre caption shows it ("/ 2500 KCAL") under the running total.
 struct WidgetRing: View {
     let macros: Macros
     let size: CGFloat
     let lineWidth: CGFloat
+    var kcalTarget: Double? = nil
 
     private var segments: [(Double, Color)] {
         [(macros.protein * 4, W.protein), (macros.carbs * 4, W.carbs), (macros.fat * 9, W.fat)]
@@ -118,10 +147,11 @@ struct WidgetRing: View {
                     .font(.system(size: size * 0.24, weight: .heavy))
                     .foregroundStyle(.primary)
                     .minimumScaleFactor(0.6)
-                Text("KCAL")
+                Text(kcalTarget.map { "/ \(Int($0.rounded())) KCAL" } ?? "KCAL")
                     .font(.system(size: size * 0.09, weight: .bold))
                     .tracking(0.8)
                     .foregroundStyle(.secondary)
+                    .minimumScaleFactor(0.7)
             }
         }
         .frame(width: size, height: size)
@@ -148,7 +178,7 @@ struct TodayWidget: Widget {
         }
         .configurationDisplayName("Today's Macros")
         .description("Your running calories, protein, carbs, and fat for today.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular])
     }
 }
 
@@ -160,7 +190,9 @@ struct TodayWidget: Widget {
     MacroEntry(date: .now,
                snapshot: TodaySnapshot(totals: Macros(kcal: 1430, protein: 96, carbs: 152, fat: 48),
                                        dayStart: Calendar.current.startOfDay(for: .now),
-                                       entryCount: 3))
+                                       entryCount: 3),
+               proteinTarget: 160,
+               kcalTarget: 2500)
 }
 
 #Preview("Small", as: .systemSmall) {
@@ -169,5 +201,18 @@ struct TodayWidget: Widget {
     MacroEntry(date: .now,
                snapshot: TodaySnapshot(totals: Macros(kcal: 1430, protein: 96, carbs: 152, fat: 48),
                                        dayStart: Calendar.current.startOfDay(for: .now),
-                                       entryCount: 3))
+                                       entryCount: 3),
+               proteinTarget: 160,
+               kcalTarget: 2500)
+}
+
+#Preview("Lock Screen", as: .accessoryCircular) {
+    TodayWidget()
+} timeline: {
+    MacroEntry(date: .now,
+               snapshot: TodaySnapshot(totals: Macros(kcal: 1430, protein: 96, carbs: 152, fat: 48),
+                                       dayStart: Calendar.current.startOfDay(for: .now),
+                                       entryCount: 3),
+               proteinTarget: 160,
+               kcalTarget: 2500)
 }

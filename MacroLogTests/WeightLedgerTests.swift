@@ -141,7 +141,7 @@ struct WeightLedgerTests {
 
     /// The read prompt must arrive in context — after the app has proven
     /// itself with a confirmed meal — never at first launch. Once asked,
-    /// every foreground syncs (the store purges written entries daily, so a
+    /// every foreground syncs (the meal check covers today only, so a
     /// morning legitimately has none).
     @Test func firstSyncWaitsForAConfirmedMeal() {
         #expect(!WeightBridge.shouldSync(authRequested: false, hasConfirmedMeal: false))

@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 import WidgetKit
 
-/// Query, retention, and widget-publishing logic over the SwiftData store.
+/// Query, history-bound, and widget-publishing logic over the SwiftData store.
 /// Mutations of individual entries happen in the view model against the same
 /// `ModelContext`; this type centralises the reads and the day-boundary rules.
 @MainActor
@@ -37,21 +37,51 @@ struct EntryStore {
         return (try? context.fetch(descriptor)) ?? []
     }
 
-    // MARK: - Retention
+    // MARK: - History bounds
 
-    /// Removes entries older than today that have been successfully written to
-    /// Health; the app keeps no history beyond today (ENT-04). Pending or
-    /// unwritten entries survive regardless of age so nothing captured is ever
-    /// lost.
-    func purgeOldWrittenEntries(now: Date = Date()) {
-        let dayStart = calendar.startOfDay(for: now)
-        let written = EntryStatus.written.rawValue
-        let descriptor = FetchDescriptor<FoodEntry>(
-            predicate: #Predicate { $0.statusRaw == written && $0.capturedAt < dayStart }
+    /// Start of the earliest day holding a confirmed entry — the back limit for
+    /// the day-paged list. Entries are retained indefinitely (day history,
+    /// 2026-08-05, superseding ENT-04's day-boundary purge); photos are never
+    /// persisted, so the store stays tiny regardless.
+    func earliestConfirmedDayStart(now: Date = Date()) -> Date {
+        let pending = EntryStatus.pendingReview.rawValue
+        var descriptor = FetchDescriptor<FoodEntry>(
+            predicate: #Predicate { $0.statusRaw != pending },
+            sortBy: [SortDescriptor(\.capturedAt, order: .forward)]
         )
-        guard let stale = try? context.fetch(descriptor) else { return }
-        for entry in stale { context.delete(entry) }
-        try? context.save()
+        descriptor.fetchLimit = 1
+        let today = calendar.startOfDay(for: now)
+        guard let earliest = (try? context.fetch(descriptor))?.first?.capturedAt else {
+            return today
+        }
+        return min(calendar.startOfDay(for: earliest), today)
+    }
+
+    // MARK: - Export
+
+    /// Every confirmed day's totals, oldest first — the export feed. A full
+    /// fetch is fine: the store stays tiny (photos are never persisted).
+    func allConfirmedDailyTotals() -> [DailyTotal] {
+        let pending = EntryStatus.pendingReview.rawValue
+        let descriptor = FetchDescriptor<FoodEntry>(
+            predicate: #Predicate { $0.statusRaw != pending },
+            sortBy: [SortDescriptor(\.capturedAt, order: .forward)]
+        )
+        let entries = (try? context.fetch(descriptor)) ?? []
+        var result: [DailyTotal] = []
+        for entry in entries {
+            let dayStart = calendar.startOfDay(for: entry.capturedAt)
+            if let last = result.last, last.dayStart == dayStart {
+                result[result.count - 1] = DailyTotal(dayStart: dayStart,
+                                                      totals: last.totals + entry.macros,
+                                                      entryCount: last.entryCount + 1)
+            } else {
+                result.append(DailyTotal(dayStart: dayStart,
+                                         totals: entry.macros,
+                                         entryCount: 1))
+            }
+        }
+        return result
     }
 
     // MARK: - Widget snapshot
