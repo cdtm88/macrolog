@@ -7,7 +7,7 @@
 name: MacroLog
 options:
   xcodeVersion: "26.6"
-  bundleIdPrefix: com.macrolog
+  bundleIdPrefix: com.christianmoore88
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
@@ -33,7 +33,7 @@ targets:
       Release: MacroLog/Config/Secrets.xcconfig
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.macrolog.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.christianmoore88.macrolog
         INFOPLIST_FILE: MacroLog/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: MacroLog/Resources/MacroLog.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -54,7 +54,7 @@ targets:
       - target: MacroLog
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.macrolog.app.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.christianmoore88.macrolog.tests
         GENERATE_INFOPLIST_FILE: YES
 
   MacroLogWidget:
@@ -66,7 +66,7 @@ targets:
       - MacroLogShared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.macrolog.app.widget
+        PRODUCT_BUNDLE_IDENTIFIER: com.christianmoore88.macrolog.widget
         INFOPLIST_FILE: MacroLogWidget/Info.plist
         CODE_SIGN_ENTITLEMENTS: MacroLogWidget/MacroLogWidget.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

@@ -49,6 +49,7 @@
 		A65B92D186BEEBE88C927FA1 /* CoachRelayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F5D0EEC8548C8EE7D9A8761 /* CoachRelayTests.swift */; };
 		AEC6081C0C92802C5DA20E3E /* ReminderPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6358A46D2E2FE37DA09D0E /* ReminderPlannerTests.swift */; };
 		AF4F6665E1F7D3351CE1C9AC /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589EFAC55A6DC03043D8B8E1 /* RootView.swift */; };
+		B13ED43F544774AD7CC2BB5A /* SimulatorSeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D7162178F2E22AD98E22FED /* SimulatorSeed.swift */; };
 		B1BA41017A8B548507A4706B /* MacroEstimate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5911E36453C9662D75D32A4 /* MacroEstimate.swift */; };
 		B2B534ADDC820352EB0D5CA9 /* MealPeriodTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15275B95268C82ED969393C0 /* MealPeriodTests.swift */; };
 		BE21C535E9FA83CA600561A2 /* SharedConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42276EF5B720E95C21A02C9 /* SharedConstants.swift */; };
@@ -119,6 +120,7 @@
 		4396B72FB331A38C6F38E2AB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		445F8C234526F0F01A60B5D0 /* MacroLogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MacroLogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		48EA90502FA2CB67A7BAFC40 /* MacroLogWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroLogWidgetBundle.swift; sourceTree = "<group>"; };
+		4D7162178F2E22AD98E22FED /* SimulatorSeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatorSeed.swift; sourceTree = "<group>"; };
 		4EFE536C0520083CAE2679C9 /* DailyTotalsExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyTotalsExport.swift; sourceTree = "<group>"; };
 		53DD990A91ECC1CB460668E6 /* EditDiscardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditDiscardTests.swift; sourceTree = "<group>"; };
 		589EFAC55A6DC03043D8B8E1 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -305,6 +307,7 @@
 				A01EAFC2B003A3B1F05B8A12 /* ReminderPlanner.swift */,
 				A13762E1DEF7D4D38E441BFF /* ReminderScheduler.swift */,
 				DA069664E7D0EE0BDBAEB9D1 /* Secrets.swift */,
+				4D7162178F2E22AD98E22FED /* SimulatorSeed.swift */,
 				0C659A6BD9664D56E1F099F8 /* WeightBridge.swift */,
 			);
 			path = Services;
@@ -542,6 +545,7 @@
 				D5086E220DFFDA87E19052E1 /* SettingsStore.swift in Sources */,
 				FBB4E112962CA3F8DB9F9829 /* SettingsView.swift in Sources */,
 				BE21C535E9FA83CA600561A2 /* SharedConstants.swift in Sources */,
+				B13ED43F544774AD7CC2BB5A /* SimulatorSeed.swift in Sources */,
 				07A7AAA8CD39B50C706FD785 /* TextEntrySheet.swift in Sources */,
 				86A95E7853FB8D76DB8051ED /* Theme.swift in Sources */,
 				F9C8847A08A9AD05A61904A4 /* TodayListView.swift in Sources */,
@@ -640,7 +644,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.macrolog.app.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christianmoore88.macrolog.widget;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -659,7 +663,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.macrolog.app.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christianmoore88.macrolog.widget;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -680,7 +684,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.macrolog.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christianmoore88.macrolog;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -764,7 +768,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.macrolog.app.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christianmoore88.macrolog.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacroLog.app/MacroLog";
@@ -782,7 +786,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.macrolog.app.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christianmoore88.macrolog.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacroLog.app/MacroLog";
@@ -804,7 +808,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.macrolog.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christianmoore88.macrolog;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
