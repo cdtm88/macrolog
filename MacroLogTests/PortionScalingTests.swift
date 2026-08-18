@@ -53,29 +53,6 @@ struct PortionScalingTests {
         }
     }
 
-    @Test func timeStepSnapsToFiveMinuteGrid() throws {
-        let (model, entry, container) = try makeModel()
-        withExtendedLifetime(container) {
-            // 10:13:42 → down snaps to 10:10:00, then steps to 10:05:00.
-            var parts = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-            (parts.hour, parts.minute, parts.second) = (10, 13, 42)
-            entry.capturedAt = Calendar.current.date(from: parts)!
-
-            model.adjustTime(entry, byMinutes: -5)
-            var hm = Calendar.current.dateComponents([.hour, .minute, .second], from: entry.capturedAt)
-            #expect((hm.hour, hm.minute, hm.second) == (10, 10, 0))
-
-            model.adjustTime(entry, byMinutes: -5)
-            hm = Calendar.current.dateComponents([.hour, .minute, .second], from: entry.capturedAt)
-            #expect((hm.hour, hm.minute) == (10, 5))
-
-            model.adjustTime(entry, byMinutes: 5)
-            model.adjustTime(entry, byMinutes: 5)
-            hm = Calendar.current.dateComponents([.hour, .minute], from: entry.capturedAt)
-            #expect((hm.hour, hm.minute) == (10, 15))
-        }
-    }
-
     @Test func stepperAdjustmentClampsAtZero() throws {
         let (model, entry, container) = try makeModel()
         withExtendedLifetime(container) {

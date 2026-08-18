@@ -48,12 +48,25 @@ struct EditDiscardTests {
     @Test func discardingEditedExistingEntryRestoresCapturedAt() throws {
         let (model, entry, originalCapturedAt, container) = try makeEditingModel()
         withExtendedLifetime(container) {
-            model.adjustTime(entry, byMinutes: -5)
+            // The review time picker binds straight to the model property.
+            entry.capturedAt = originalCapturedAt.addingTimeInterval(-7200)
             #expect(entry.capturedAt != originalCapturedAt)
 
             model.discard(entry)
 
             #expect(entry.capturedAt == originalCapturedAt)
+        }
+    }
+
+    @Test func discardingEditedExistingEntryRestoresName() throws {
+        let (model, entry, _, container) = try makeEditingModel()
+        withExtendedLifetime(container) {
+            // The review name field binds straight to the model property.
+            entry.name = "Renamed lunch"
+
+            model.discard(entry)
+
+            #expect(entry.name == "Lunch")
         }
     }
 
@@ -89,6 +102,34 @@ struct EditDiscardTests {
             let remaining = try container.mainContext.fetch(FetchDescriptor<FoodEntry>())
             #expect(remaining.isEmpty)
             #expect(model.pendingEntry == nil)
+        }
+    }
+
+    /// The AI's estimate is frozen at creation for bias measurement: review
+    /// edits and portion scaling change the working macros, never the
+    /// baseline. Favourites carry no baseline — there was no AI estimate.
+    @Test func estimateBaselineIsFrozenThroughEditsAndNilForFavorites() throws {
+        let container = try ModelContainer(
+            for: FoodEntry.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let model = CaptureViewModel(context: container.mainContext)
+        try withExtendedLifetime(container) {
+            let estimate = MacroEstimate(
+                name: "Curry",
+                macros: Macros(kcal: 900, protein: 40, carbs: 90, fat: 40,
+                               fiber: 8, sodium: 1600))
+            model.handleEstimate(estimate, capturedAt: Date())
+            let entry = try #require(model.pendingEntry)
+            #expect(entry.estimatedMacros == estimate.macros)
+
+            model.adjust(entry, keyPath: \.kcal, by: -200)
+            model.setPortion(entry, factor: 0.5)
+            #expect(entry.macros != estimate.macros)
+            #expect(entry.estimatedMacros == estimate.macros)
+
+            model.discard(entry)
+            model.submitFavorite(name: "Protein shake", macros: originalMacros)
+            #expect(model.pendingEntry?.estimatedMacros == nil)
         }
     }
 

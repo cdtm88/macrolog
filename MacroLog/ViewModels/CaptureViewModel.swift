@@ -35,11 +35,12 @@ final class CaptureViewModel {
 
     /// The values the entry had when review opened. Serves two jobs: the
     /// portion multiplier scales against it (so factors don't compound), and
-    /// discarding an *edit* of an existing entry restores it — steppers mutate
-    /// the autosaving SwiftData model in place, so without a restore "Discard"
-    /// would silently keep the edits while Health still holds the old values
-    /// (D-08: local and Health must never diverge).
-    private var reviewBaseline: (macros: Macros, capturedAt: Date)?
+    /// discarding an *edit* of an existing entry restores it — steppers, the
+    /// name field, and the time picker mutate the autosaving SwiftData model
+    /// in place, so without a restore "Discard" would silently keep the edits
+    /// while Health still holds the old values (D-08: local and Health must
+    /// never diverge).
+    private var reviewBaseline: (name: String, macros: Macros, capturedAt: Date)?
 
     // Pending estimate awaiting review, surfaced on the capture view (REV-03).
     var pendingEntry: FoodEntry?
@@ -166,11 +167,15 @@ final class CaptureViewModel {
     }
 
     /// Recovers an estimate that was awaiting review when the app was last
-    /// closed (CAP-05).
+    /// closed (CAP-05), reopening the review directly — the capture view no
+    /// longer carries an "estimate ready" pill, so this is the only way back
+    /// in. The photo is gone (never persisted, SEC-03); review shows its
+    /// placeholder.
     private func recoverPendingEntry() {
         if let pending = store.pendingReviewEntry() {
             pendingEntry = pending
             captureState = .ready
+            openReview(for: pending, editingExisting: false)
         }
     }
 
@@ -281,10 +286,13 @@ final class CaptureViewModel {
 
         // Persist a pending-review entry immediately so it survives termination
         // (CAP-05). Timestamped to capture, not to confirmation (ENT-06/D-11).
+        // The estimate is frozen alongside the working values so the Full
+        // export can compare what the AI said with what was confirmed.
         let entry = FoodEntry(name: estimate.name,
                               macros: estimate.macros,
                               capturedAt: capturedAt,
-                              status: .pendingReview)
+                              status: .pendingReview,
+                              estimatedMacros: estimate.macros)
         context.insert(entry)
         try? context.save()
 
@@ -346,16 +354,9 @@ final class CaptureViewModel {
     private func presentReview(for entry: FoodEntry, editingExisting: Bool) {
         isEditingExisting = editingExisting
         reviewImage = editingExisting ? nil : lastImage
-        reviewBaseline = (entry.macros, entry.capturedAt)
+        reviewBaseline = (entry.name, entry.macros, entry.capturedAt)
         portionFactor = 1
         reviewEntry = entry   // item-based presentation: setting this shows review
-    }
-
-    /// Re-open the pending estimate from the capture view without navigating
-    /// away from it (REV-03).
-    func openPendingReview() {
-        guard let pending = pendingEntry else { return }
-        openReview(for: pending, editingExisting: false)
     }
 
     func adjust(_ entry: FoodEntry, keyPath: WritableKeyPath<Macros, Double>, by delta: Double) {
@@ -378,20 +379,6 @@ final class CaptureViewModel {
                               sodium: max(0, (base.sodium * factor).rounded()))
     }
 
-    /// Steps the capture time onto the five-minute grid: 10:13 steps down to
-    /// 10:10, 10:05, … and up to 10:15, 10:20, … Only the sign of `minutes`
-    /// matters; once on the grid each step is a full five minutes.
-    func adjustTime(_ entry: FoodEntry, byMinutes minutes: Int) {
-        let grid: TimeInterval = 5 * 60
-        let t = entry.capturedAt.timeIntervalSinceReferenceDate
-        let down = (t / grid).rounded(.down) * grid
-        let up = (t / grid).rounded(.up) * grid
-        let snapped = minutes < 0
-            ? (t == down ? down - grid : down)
-            : (t == up ? up + grid : up)
-        entry.capturedAt = Date(timeIntervalSinceReferenceDate: snapped)
-    }
-
     /// Confirms the estimate and writes to Apple Health. No write happens until
     /// this point (REV-01). Leaves exactly one correlation (ENT-03).
     func confirm(_ entry: FoodEntry) {
@@ -405,6 +392,11 @@ final class CaptureViewModel {
             healthError = .unavailable
             return
         }
+
+        // The name is user-editable on review; a blanked-out field must not
+        // reach Health metadata or the day list as an empty string.
+        let trimmedName = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        entry.name = trimmedName.isEmpty ? (reviewBaseline?.name ?? "Meal") : trimmedName
 
         // Relay to the coach the moment the meal is confirmed (MAC-01) —
         // fire and forget, never awaited, independent of the Health write's
@@ -459,6 +451,7 @@ final class CaptureViewModel {
     func discard(_ entry: FoodEntry) {
         if isEditingExisting {
             if let baseline = reviewBaseline {
+                entry.name = baseline.name
                 entry.macros = baseline.macros
                 entry.capturedAt = baseline.capturedAt
                 try? context.save()
@@ -555,12 +548,24 @@ final class CaptureViewModel {
 
     // MARK: - Derived data for views
 
-    /// Writes all-history daily totals to a temp CSV and returns its URL for
-    /// the settings sheet's ShareLink; nil when the write fails.
-    func dailyTotalsExportURL() -> URL? {
-        let csv = DailyTotalsExport.csv(days: store.allConfirmedDailyTotals())
+    /// Writes the all-history CSV to a temp file and returns its URL for the
+    /// settings sheet's ShareLink; nil when the write fails. Full detail is
+    /// one row per meal (name and time included); lite is one row per day's
+    /// totals — the export setting picks.
+    func exportURL() -> URL? {
+        let full = SettingsStore.exportFull()
+        let csv: String
+        if full {
+            let items = store.allConfirmedEntries().map {
+                MealExportItem(capturedAt: $0.capturedAt, name: $0.name,
+                               macros: $0.macros, estimated: $0.estimatedMacros)
+            }
+            csv = DailyTotalsExport.mealCSV(items: items)
+        } else {
+            csv = DailyTotalsExport.csv(days: store.allConfirmedDailyTotals())
+        }
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("MacroLog-daily-totals.csv")
+            .appendingPathComponent(full ? "MacroLog-meals.csv" : "MacroLog-daily-totals.csv")
         do {
             try Data(csv.utf8).write(to: url, options: .atomic)
             return url

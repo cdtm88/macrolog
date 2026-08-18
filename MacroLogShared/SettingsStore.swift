@@ -11,11 +11,14 @@ import Foundation
 public enum SettingsStore {
     public static let defaultProteinTarget: Double = 160
     public static let defaultKcalTarget: Double = 2500
+    public static let defaultFiberTarget: Double = 30
     /// Minutes since local midnight — 20:00.
     public static let defaultProteinReminderTime = 20 * 60
 
     private static let proteinTargetKey = "protein_target_g"
     private static let kcalTargetKey = "kcal_target"
+    private static let fiberTargetKey = "fiber_target_g"
+    private static let exportFullKey = "export_full"
     private static let remindersEnabledKey = "reminders_enabled"
     private static let reminderTimesKey = "reminder_times_v1"
     private static let proteinReminderEnabledKey = "protein_reminder_enabled"
@@ -49,6 +52,31 @@ public enum SettingsStore {
 
     public static func setKcalTarget(_ kcal: Double, defaults: UserDefaults? = nil) {
         (defaults ?? sharedDefaults)?.set(kcal, forKey: kcalTargetKey)
+    }
+
+    // MARK: - Fibre target
+
+    public static func fiberTarget(defaults: UserDefaults? = nil) -> Double {
+        let store = defaults ?? sharedDefaults
+        guard let value = store?.object(forKey: fiberTargetKey) as? Double,
+              value > 0 else { return defaultFiberTarget }
+        return value
+    }
+
+    public static func setFiberTarget(_ grams: Double, defaults: UserDefaults? = nil) {
+        (defaults ?? sharedDefaults)?.set(grams, forKey: fiberTargetKey)
+    }
+
+    // MARK: - Export detail
+
+    /// Whether the CSV export carries one row per meal (full) rather than one
+    /// per day (lite).
+    public static func exportFull(defaults: UserDefaults? = nil) -> Bool {
+        (defaults ?? sharedDefaults)?.bool(forKey: exportFullKey) ?? false
+    }
+
+    public static func setExportFull(_ full: Bool, defaults: UserDefaults? = nil) {
+        (defaults ?? sharedDefaults)?.set(full, forKey: exportFullKey)
     }
 
     // MARK: - Meal reminders

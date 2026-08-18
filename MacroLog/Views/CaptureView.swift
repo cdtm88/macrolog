@@ -161,9 +161,10 @@ struct CaptureView: View {
             case .working:
                 workingOverlay
             case .ready:
-                if let pending = model.pendingEntry {
-                    readyPill(for: pending)
-                }
+                // Nothing: the review presents itself the moment an estimate
+                // lands (and on relaunch recovery), so a "ready" pill would
+                // only ever flash behind the cover.
+                EmptyView()
             }
         }
         .frame(maxHeight: .infinity)
@@ -221,39 +222,6 @@ struct CaptureView: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 30))
-    }
-
-    private func readyPill(for entry: FoodEntry) -> some View {
-        VStack {
-            Spacer()
-            Button { model.openPendingReview() } label: {
-                HStack(spacing: 13) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(LinearGradient(colors: [Color(hex: 0x8A6F4F), Color(hex: 0x3A2F24)],
-                                             startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 44, height: 44)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("ESTIMATE READY")
-                            .font(.system(size: 10, weight: .bold))
-                            .tracking(0.5)
-                            .foregroundStyle(Color(hex: 0x30A14E))
-                        Text("\(entry.name) · \(Int(entry.kcal.rounded())) kcal")
-                            .font(.system(.subheadline, weight: .semibold))
-                            .foregroundStyle(Theme.ink)
-                            .lineLimit(1)
-                    }
-                    Spacer()
-                    Text("Review ›")
-                        .font(.system(.footnote, weight: .bold))
-                        .foregroundStyle(Theme.accent)
-                }
-                .padding(14)
-                .background(.white.opacity(0.96), in: RoundedRectangle(cornerRadius: 20))
-                .shadow(color: .black.opacity(0.28), radius: 12, y: 8)
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 20)
-        }
     }
 
     // MARK: - Controls

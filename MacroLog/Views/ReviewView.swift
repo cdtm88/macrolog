@@ -85,10 +85,12 @@ struct ReviewView: View {
             .frame(width: 52, height: 52)
             .clipShape(RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 2) {
-                Text(entry.name)
+                // Editable: the AI's name is a guess like the macros are.
+                // A blanked field falls back on confirm, never reaching Health.
+                TextField("Meal name", text: $entry.name)
                     .font(.system(.body, weight: .bold))
                     .foregroundStyle(Theme.ink)
-                    .lineLimit(2)
+                    .submitLabel(.done)
                 Text("MacroLog thinks. You decide.")
                     .font(.system(.caption))
                     .foregroundStyle(Theme.secondary)
@@ -213,23 +215,23 @@ struct ReviewView: View {
         HStack {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Logged at").font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-                Text("Kept at capture time, not now").font(.system(.caption2)).foregroundStyle(Theme.secondary)
+                Text("Defaults to capture time, not now").font(.system(.caption2)).foregroundStyle(Theme.secondary)
             }
-            Spacer()
-            HStack(spacing: 10) {
-                stepButton("minus") { model.adjustTime(entry, byMinutes: -5) }
-                    .accessibilityLabel("Five minutes earlier")
-                Text(entry.capturedAt, format: .dateTime.hour().minute())
-                    .font(.system(.callout, weight: .bold))
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.ink)
-                    .frame(minWidth: 78)
-                stepButton("plus") { model.adjustTime(entry, byMinutes: 5) }
-                    .accessibilityLabel("Five minutes later")
-            }
+            Spacer(minLength: 8)
+            // Compact time picker instead of ±5-minute steppers: logging hours
+            // late is a couple of taps, not a tap marathon. Time-of-day only —
+            // the entry stays on its capture day (accepted trade-off for the
+            // cleaner single-chip look) — and capped at now, a meal can't be
+            // in the future.
+            DatePicker("Logged at",
+                       selection: $entry.capturedAt,
+                       in: ...Date.now,
+                       displayedComponents: .hourAndMinute)
+                .labelsHidden()
+                .datePickerStyle(.compact)
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 16)
+        .padding(.vertical, 12)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: 24))
     }
 

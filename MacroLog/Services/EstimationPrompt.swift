@@ -36,15 +36,24 @@ enum EstimationPrompt {
     4. Sanity-check the total against what you can see. If the number does not \
     match the volume of food on the plate, adjust it rather than accept it.
 
-    ## Known biases — correct for these
+    ## Calibration
 
-    - Added fat is the single largest source of error. Restaurant and takeaway \
-    food is cooked with far more oil, butter, and cream than is ever visible. A \
-    restaurant curry, stir-fry, or pasta dish commonly carries 20–40 g of added \
-    fat that does not appear in the photo. Home cooking is lower but rarely zero.
-    - Absorbed oil counts in anything fried or braised: chips, fried rice, \
-    samosas, anything glossy, anything from a curry house.
-    - Restaurant portions typically run 1.5–2× a home portion of the same dish.
+    Aim for the number a kitchen-scale weigh-in would produce. Errors must fall \
+    evenly on both sides: a habit of rounding up is exactly as wrong as a habit \
+    of rounding down. Never add a safety margin to any number.
+
+    - Added fat is the largest source of error in BOTH directions. You itemised \
+    the visible oil, butter, dressing, and sauce in step 1 — never add a further \
+    blanket uplift for fat you have already counted.
+    - Judge the preparation before assuming hidden fat. Clearly restaurant, \
+    takeaway, or deep-fried food (chips, fried rice, anything glossy, anything \
+    from a curry house) commonly hides 15–30 g of fat beyond what is visible — \
+    count it. A plain home-cooked plate — grilled or baked protein, plain \
+    carbohydrate, vegetables — hides close to none. Do not pad it.
+    - Portion size comes from the scale references in the photo or the user's \
+    words, not from an assumed serving. Apply restaurant-portion scaling \
+    (typically 1.5–2× a home portion) only when the setting is identifiably a \
+    restaurant or the description says so.
     - Sodium tracks preparation, not appearance. Cooked from raw ingredients at \
     home is roughly 300–800 mg per meal; restaurant, takeaway, processed, or \
     cured food is commonly 1,200–2,500 mg. Bread, cheese, sauces, and cured meat \
@@ -52,6 +61,18 @@ enum EstimationPrompt {
     - Fibre comes almost entirely from whole grains, pulses, vegetables, fruit, \
     nuts, and seeds. Refined carbohydrate and animal products contribute \
     essentially none.
+
+    Anchor your totals against these reference meals before answering:
+
+    - Porridge made with 250 ml semi-skimmed milk plus a banana: ~350 kcal.
+    - Two slices of buttered toast with two fried eggs: ~450 kcal.
+    - Home-cooked grilled chicken breast, 200 g cooked rice, and vegetables \
+    with a teaspoon of oil: ~600 kcal.
+    - Restaurant chicken tikka masala with pilau rice and half a naan: \
+    ~1,100 kcal.
+
+    If your total for a comparable meal lands far from its anchor, re-derive it \
+    before answering.
 
     ## Output rules
 

@@ -1,16 +1,17 @@
 import SwiftUI
 import UserNotifications
 
-/// Minimal preferences sheet: the daily targets, meal reminders, the protein
-/// check, and the daily-totals export. Values write through to `SettingsStore`
-/// as they change; the single reminder re-arm and widget refresh happen when
-/// the sheet dismisses (`settingsSheetDismissed`), so scrubbing a time picker
-/// doesn't thrash the scheduler.
+/// Minimal preferences sheet: the daily targets, notifications, and the CSV
+/// export. Values write through to `SettingsStore` as they change; the single
+/// reminder re-arm and widget refresh happen when the sheet dismisses
+/// (`settingsSheetDismissed`), so scrubbing a time picker doesn't thrash the
+/// scheduler.
 struct SettingsView: View {
     @Bindable var model: CaptureViewModel
 
     @Environment(\.dismiss) private var dismiss
     @State private var proteinTarget = SettingsStore.proteinTarget()
+    @State private var fiberTarget = SettingsStore.fiberTarget()
     @State private var kcalTarget = SettingsStore.kcalTarget()
     @State private var remindersEnabled = SettingsStore.remindersEnabled()
     @State private var reminderTimes = SettingsStore.reminderTimes()
@@ -19,14 +20,14 @@ struct SettingsView: View {
     @State private var authorizationStatus: UNAuthorizationStatus = .notDetermined
     @State private var isTogglingReminders = false
     @State private var isTogglingProteinReminder = false
+    @State private var exportFull = SettingsStore.exportFull()
     @State private var exportURL: URL?
 
     var body: some View {
         NavigationStack {
             List {
                 targetSection
-                remindersSection
-                proteinReminderSection
+                notificationsSection
                 dataSection
             }
             .navigationTitle("Settings")
@@ -40,7 +41,7 @@ struct SettingsView: View {
                 authorizationStatus = await model.reminderAuthorizationStatus()
                 // Eagerly built: the store is tiny and nothing can add entries
                 // while this modal is up.
-                exportURL = model.dailyTotalsExportURL()
+                exportURL = model.exportURL()
             }
         }
     }
@@ -49,36 +50,12 @@ struct SettingsView: View {
 
     private var targetSection: some View {
         Section {
-            Stepper(value: $proteinTarget, in: 50...400, step: 5) {
-                HStack {
-                    Text("Protein")
-                        .font(.system(.body))
-                        .foregroundStyle(Theme.ink)
-                    Spacer()
-                    Text("\(Int(proteinTarget)) g")
-                        .font(.system(.body, weight: .bold))
-                        .foregroundStyle(Theme.protein)
-                        .monospacedDigit()
-                }
-            }
-            .onChange(of: proteinTarget) { _, value in
-                SettingsStore.setProteinTarget(value)
-            }
-            Stepper(value: $kcalTarget, in: 1200...5000, step: 50) {
-                HStack {
-                    Text("Calories")
-                        .font(.system(.body))
-                        .foregroundStyle(Theme.ink)
-                    Spacer()
-                    Text("\(Int(kcalTarget)) kcal")
-                        .font(.system(.body, weight: .bold))
-                        .foregroundStyle(Theme.ink)
-                        .monospacedDigit()
-                }
-            }
-            .onChange(of: kcalTarget) { _, value in
-                SettingsStore.setKcalTarget(value)
-            }
+            targetStepper("Protein", value: $proteinTarget, in: 50...400, step: 5,
+                          unit: "g", store: SettingsStore.setProteinTarget)
+            targetStepper("Fibre", value: $fiberTarget, in: 10...100, step: 5,
+                          unit: "g", store: SettingsStore.setFiberTarget)
+            targetStepper("Calories", value: $kcalTarget, in: 1200...5000, step: 50,
+                          unit: "kcal", store: SettingsStore.setKcalTarget)
         } header: {
             Text("Daily targets")
         } footer: {
@@ -86,10 +63,37 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Meal reminders
+    private func targetStepper(_ label: String, value: Binding<Double>,
+                               in range: ClosedRange<Double>, step: Double,
+                               unit: String,
+                               store: @escaping (Double, UserDefaults?) -> Void) -> some View {
+        Stepper(value: value, in: range, step: step) {
+            HStack {
+                Text(label)
+                    .font(.system(.body))
+                    .foregroundStyle(Theme.ink)
+                Spacer()
+                Text("\(Int(value.wrappedValue)) \(unit)")
+                    .font(.system(.body, weight: .bold))
+                    .foregroundStyle(Theme.ink)
+                    .monospacedDigit()
+            }
+        }
+        .onChange(of: value.wrappedValue) { _, newValue in
+            store(newValue, nil)
+        }
+    }
 
-    private var remindersSection: some View {
+    // MARK: - Notifications
+
+    /// Meal reminders and the daily protein check in one section — two
+    /// toggles, one shared denied banner.
+    private var notificationsSection: some View {
         Section {
+            if (remindersEnabled || proteinReminderEnabled) && authorizationStatus == .denied {
+                deniedRow
+            }
+
             Toggle("Remind me to log", isOn: $remindersEnabled)
                 .disabled(isTogglingReminders)
                 .onChange(of: remindersEnabled) { _, enabled in
@@ -109,9 +113,6 @@ struct SettingsView: View {
                 }
 
             if remindersEnabled {
-                if authorizationStatus == .denied {
-                    deniedRow
-                }
                 ForEach(reminderTimes.indices, id: \.self) { index in
                     DatePicker("Reminder \(index + 1)",
                                selection: timeBinding(at: index),
@@ -130,17 +131,7 @@ struct SettingsView: View {
                     }
                 }
             }
-        } header: {
-            Text("Meal reminders")
-        } footer: {
-            Text("A reminder is skipped when you've logged a meal in the 2 hours before it. The last reminder of the day shows how much protein you're short.")
-        }
-    }
 
-    // MARK: - Protein check
-
-    private var proteinReminderSection: some View {
-        Section {
             Toggle("Daily protein check", isOn: $proteinReminderEnabled)
                 .disabled(isTogglingProteinReminder)
                 .onChange(of: proteinReminderEnabled) { _, enabled in
@@ -159,15 +150,14 @@ struct SettingsView: View {
                 }
 
             if proteinReminderEnabled {
-                if authorizationStatus == .denied {
-                    deniedRow
-                }
-                DatePicker("Time",
+                DatePicker("Protein check time",
                            selection: proteinTimeBinding,
                            displayedComponents: .hourAndMinute)
             }
+        } header: {
+            Text("Notifications")
         } footer: {
-            Text("Fires at this time if you're still short of your protein target — even if you've logged recently. Skipped once the target is met.")
+            Text("A meal reminder is skipped when you've logged in the 2 hours before it; the day's last one shows how much protein you're short. The protein check fires at its set time regardless of recent logging, and is skipped once the target is met.")
         }
     }
 
@@ -184,16 +174,27 @@ struct SettingsView: View {
 
     private var dataSection: some View {
         Section {
+            Picker("Export detail", selection: $exportFull) {
+                Text("Lite").tag(false)
+                Text("Full").tag(true)
+            }
+            .onChange(of: exportFull) { _, full in
+                SettingsStore.setExportFull(full)
+                exportURL = model.exportURL()
+            }
             if let exportURL {
                 ShareLink(item: exportURL) {
-                    Label("Export daily totals", systemImage: "square.and.arrow.up")
+                    Label(exportFull ? "Export meals" : "Export daily totals",
+                          systemImage: "square.and.arrow.up")
                         .font(.system(.body, weight: .medium))
                 }
             }
         } header: {
             Text("Data")
         } footer: {
-            Text("A CSV of every logged day's totals.")
+            Text(exportFull
+                 ? "A CSV of every logged meal — date, time, name, and macros."
+                 : "A CSV of every logged day's totals.")
         }
     }
 

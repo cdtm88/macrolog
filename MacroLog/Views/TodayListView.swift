@@ -155,7 +155,12 @@ private struct DayEntriesList: View {
                                  met: !isToday && totals.protein >= SettingsStore.proteinTarget())
                         totalRow("Carbs", totals.carbs, unit: "g", Theme.carbs)
                         totalRow("Fat", totals.fat, unit: "g", Theme.fat)
-                        totalRow("Fibre", totals.fiber, unit: "g", Theme.secondary)
+                        totalRow("Fibre", totals.fiber, unit: "g", Theme.secondary,
+                                 // Same treatment as protein: today shows
+                                 // progress toward the current target, past
+                                 // days get a tick when they met it.
+                                 target: isToday ? SettingsStore.fiberTarget() : nil,
+                                 met: !isToday && totals.fiber >= SettingsStore.fiberTarget())
                         totalRow("Sodium", totals.sodium, unit: "mg", Theme.secondary)
                     }
                     Spacer(minLength: 0)

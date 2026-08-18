@@ -25,6 +25,18 @@ final class FoodEntry {
     /// Milligrams.
     var sodium: Double = 0
 
+    /// The AI's original estimate, frozen at estimation time and never touched
+    /// by review edits, the portion multiplier, or later list edits. Compared
+    /// against the confirmed values (via the Full export) to measure
+    /// estimation bias (2026-08-18). Nil when there was no AI estimate —
+    /// favourites and pre-instrumentation entries.
+    var estimatedKcal: Double?
+    var estimatedProtein: Double?
+    var estimatedCarbs: Double?
+    var estimatedFat: Double?
+    var estimatedFiber: Double?
+    var estimatedSodium: Double?
+
     /// Moment the meal was captured — photo taken or text submitted — NOT the
     /// moment of review confirmation. This is what the Health sample is
     /// timestamped to (ENT-06, decision D-11), so a late dinner confirmed after
@@ -46,7 +58,8 @@ final class FoodEntry {
          name: String,
          macros: Macros,
          capturedAt: Date,
-         status: EntryStatus = .pendingReview) {
+         status: EntryStatus = .pendingReview,
+         estimatedMacros: Macros? = nil) {
         self.id = id
         self.name = name
         self.kcal = macros.kcal
@@ -58,11 +71,27 @@ final class FoodEntry {
         self.capturedAt = capturedAt
         self.statusRaw = status.rawValue
         self.healthWriteFailures = 0
+        self.estimatedKcal = estimatedMacros?.kcal
+        self.estimatedProtein = estimatedMacros?.protein
+        self.estimatedCarbs = estimatedMacros?.carbs
+        self.estimatedFat = estimatedMacros?.fat
+        self.estimatedFiber = estimatedMacros?.fiber
+        self.estimatedSodium = estimatedMacros?.sodium
     }
 
     var status: EntryStatus {
         get { EntryStatus(rawValue: statusRaw) ?? .pendingReview }
         set { statusRaw = newValue.rawValue }
+    }
+
+    /// The frozen AI estimate as one value; nil unless all six were recorded.
+    var estimatedMacros: Macros? {
+        guard let estimatedKcal, let estimatedProtein, let estimatedCarbs,
+              let estimatedFat, let estimatedFiber, let estimatedSodium
+        else { return nil }
+        return Macros(kcal: estimatedKcal, protein: estimatedProtein,
+                      carbs: estimatedCarbs, fat: estimatedFat,
+                      fiber: estimatedFiber, sodium: estimatedSodium)
     }
 
     var macros: Macros {

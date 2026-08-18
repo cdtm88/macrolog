@@ -59,15 +59,20 @@ struct EntryStore {
 
     // MARK: - Export
 
-    /// Every confirmed day's totals, oldest first — the export feed. A full
+    /// Every confirmed entry, oldest first — the full-export feed. A full
     /// fetch is fine: the store stays tiny (photos are never persisted).
-    func allConfirmedDailyTotals() -> [DailyTotal] {
+    func allConfirmedEntries() -> [FoodEntry] {
         let pending = EntryStatus.pendingReview.rawValue
         let descriptor = FetchDescriptor<FoodEntry>(
             predicate: #Predicate { $0.statusRaw != pending },
             sortBy: [SortDescriptor(\.capturedAt, order: .forward)]
         )
-        let entries = (try? context.fetch(descriptor)) ?? []
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    /// Every confirmed day's totals, oldest first — the lite-export feed.
+    func allConfirmedDailyTotals() -> [DailyTotal] {
+        let entries = allConfirmedEntries()
         var result: [DailyTotal] = []
         for entry in entries {
             let dayStart = calendar.startOfDay(for: entry.capturedAt)

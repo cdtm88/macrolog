@@ -119,3 +119,59 @@ provisional pending the checkpoint.
   - The macro-share % figures (4/4/9 weighting) were removed from the Today
     header and widget rows (and `Macros`); the ring already conveys the
     split, and the numbers read as noise in the field.
+
+- **Fibre target, full/lite export, review-name edit, time picker, merged
+  notifications section** (added 2026-08-18, field feedback batch):
+  - A daily fibre target (default 30 g, `SettingsStore`), the exact protein
+    treatment: settings stepper, "12 / 30g" progress on the Today header,
+    past-day met-tick. Display-only (no reminders) and not on the widget —
+    same single-scalar carve-out class, still no streaks or goal history.
+  - A Full/Lite export setting (`SettingsStore.exportFull`, default Lite).
+    Lite is the existing daily-totals CSV; Full is one row per meal — date,
+    local time, name (CSV-quoted), six values
+    (`DailyTotalsExport.mealCSV`). This supersedes the 2026-08-11 stance
+    that the export deliberately carries no meal-level rows: the user asked
+    for meal granularity, it's opt-in, and it's still a raw temp-file share
+    with no new data path.
+  - The meal name is editable on the review screen (TextField in the meal
+    header). Discard restores the name the review opened with (baseline
+    extended); a blanked field falls back to the prior name on confirm, so
+    an empty string never reaches Health metadata or the day list.
+  - The review's "Logged at" ±5-minute steppers are replaced by a compact
+    time-of-day `DatePicker` capped at now — logging hours late is two
+    taps, not a tap marathon. Time only, no date chip: the entry stays on
+    its capture day, an accepted trade-off (2026-08-18) for the cleaner
+    single-chip look. `CaptureViewModel.adjustTime` and its grid-snap
+    tests are removed.
+  - Settings: meal reminders and the protein check merged into one
+    "Notifications" section with a single shared denied-banner; the protein
+    target value in settings now renders in ink, not blue (it read as a
+    link). Behaviour unchanged.
+  - The capture view's "ESTIMATE READY" pill is removed (field feedback:
+    redundant — the review presents itself when an estimate lands, so the
+    pill only flashed behind the cover). Its one real job, re-entering a
+    pending estimate after relaunch (CAP-05), moved into
+    `recoverPendingEntry`, which now opens the review directly. REV-03's
+    intent (a pending estimate is always one step from review) is preserved
+    with one fewer surface.
+
+- **Estimation-accuracy pass** (added 2026-08-18, field feedback: estimates
+  felt high, especially kcal):
+  - The prompt's "Known biases" section listed only upward corrections
+    (hidden fat, absorbed oil, restaurant portions) with no counterweight,
+    and invited double-counting — step 1 itemises the cooking fat, then the
+    biases section added 20–40 g of hidden fat on top. Rewritten as a
+    "Calibration" section: errors must fall evenly on both sides, never add
+    a safety margin, never uplift fat already itemised, hidden-fat and
+    restaurant-portion corrections apply only when the preparation is
+    identifiably restaurant/takeaway/fried, plus four anchor meals
+    (~350/450/600/1,100 kcal) to centre the distribution. EST-02 (one fixed
+    prompt) still holds.
+  - Instrumentation: the AI's original estimate is frozen on `FoodEntry`
+    (`estimated*` optional columns, nil for favourites and
+    pre-instrumentation entries — a lightweight SwiftData migration) and
+    never touched by review edits or portion scaling. The Full export
+    carries `est_*` columns alongside the confirmed values, so a week of
+    field data quantifies the bias — and is the D-04 evidence for an Opus
+    escalation if the prompt fix proves insufficient. No UI shows the
+    estimate; measurement only.

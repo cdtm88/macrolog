@@ -153,7 +153,11 @@ struct AnthropicClient {
              .dataNotAllowed, .internationalRoamingOff:
             return .noConnectivity
         default:
-            return .api(status: 0, message: error.localizedDescription)
+            // A fixed message, not localizedDescription — system error strings
+            // can embed the request URL, and the numeric code is all that's
+            // needed to diagnose.
+            return .api(status: 0,
+                        message: "The network request failed (error \(error.code.rawValue)).")
         }
     }
 }
