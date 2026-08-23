@@ -183,7 +183,11 @@ provisional pending the checkpoint.
   a partial update so weight is untouched, and `-1` clears a field — the
   exact weight semantics; no fibre or sodium wellness field exists, so those
   stay local). Fed on confirm/edit/delete by recomputing the entry's
-  capture-day totals; a day left with no confirmed entries clears upstream.
+  capture-day totals. *Superseded 2026-08-23:* neither intervals bridge
+  clears upstream any more — a day without data (no confirmed entries /
+  no bodyMass sample) writes nothing and drops any queued write for it,
+  so `-1` is never sent (the API's clear semantics stay documented in
+  spec §5).
   The first launch after configuration backfills every already-logged day's
   totals (oldest first), exactly once — a `backfilled` flag persisted in the
   queue file makes later launches a no-op.

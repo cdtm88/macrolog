@@ -124,13 +124,17 @@ per meal *and* intervals.icu as daily totals (recorded in
 
 ## 6. Configuration
 
-```swift
-// Config.swift, gitignored, alongside the existing Anthropic key
-anthropicApiKey     = "..."   // existing
-intervalsAthleteId  = "..."   // new
-intervalsApiKey     = "..."   // new
-coachBaseUrl        = "..."   // new
-coachIngestSecret   = "..."   // new
+As built: the keys live in the gitignored `MacroLog/Config/Secrets.xcconfig`
+(see `Secrets.example.xcconfig`), injected into Info.plist at build time and
+read via `Secrets.swift`.
+
+```
+// Secrets.xcconfig, gitignored, alongside the existing Anthropic key
+ANTHROPIC_API_KEY    = ...   // existing
+INTERVALS_ATHLETE_ID = ...   // new
+INTERVALS_API_KEY    = ...   // new
+COACH_BASE_URL       = ...   // new
+COACH_INGEST_SECRET  = ...   // new
 ```
 
 ## 7. Explicitly out of scope

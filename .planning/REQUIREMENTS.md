@@ -83,9 +83,11 @@ Requirement IDs, acceptance criteria, and payload shapes live in the bridge
 spec, `docs/macrolog-bridge.md` — the source of truth for both bridges.
 Implemented in `CoachRelay` (MAC-01..08) and `WeightBridge` (HB-01..12),
 architecture constraints ARCH-01..05 across both; tests in `CoachRelayTests`,
-`WeightLedgerTests`, and `BridgeFailureTests`. One verified deviation from the
-spec's §5 example: a cleared day sends `weight: -1`, because the live
-intervals.icu API silently ignores `null` (see the note in spec §5).
+`WeightLedgerTests`, and `BridgeFailureTests`. One deviation from the spec's
+§5 example, revised 2026-08-23: neither intervals bridge clears upstream —
+a day without data writes nothing and drops any queued write, so no clear
+payload is ever sent. (The originally shipped clear sent `weight: -1`
+because the live API silently ignores `null` — see the note in spec §5.)
 
 ## Non-functional
 
