@@ -175,3 +175,47 @@ provisional pending the checkpoint.
     field data quantifies the bias — and is the D-04 evidence for an Opus
     escalation if the prompt fix proves insufficient. No UI shows the
     estimate; measurement only.
+
+- **Nutrition totals to intervals.icu** (added 2026-08-21, user-requested):
+  `NutritionBridge` PUTs each day's confirmed totals to the same wellness
+  endpoint the weight bridge uses, into the native `kcalConsumed`, `protein`,
+  `carbohydrates` and `fatTotal` fields (live-verified 2026-08-21: the PUT is
+  a partial update so weight is untouched, and `-1` clears a field — the
+  exact weight semantics; no fibre or sodium wellness field exists, so those
+  stay local). Fed on confirm/edit/delete by recomputing the entry's
+  capture-day totals; a day left with no confirmed entries clears upstream.
+  The first launch after configuration backfills every already-logged day's
+  totals (oldest first), exactly once — a `backfilled` flag persisted in the
+  queue file makes later launches a no-op.
+  Same activation keys as the weight bridge (`INTERVALS_ATHLETE_ID` /
+  `INTERVALS_API_KEY`), own queue (`nutrition-queue.json`, one pending write
+  per date, newest wins, bounded 366 with logged evictions to
+  `nutrition-drops.log`), CoachRelay-style in-session backoff plus foreground
+  drain, fire-and-forget on the logging path. This deliberately relaxes the
+  bridge spec's ARCH-04 ("neither is sent to both"): macros now reach the
+  coach per meal *and* intervals.icu as daily totals — an accepted deviation,
+  not an oversight.
+
+- **Estimation-accuracy readout** (added 2026-08-21): a read-only "Estimation
+  accuracy" section in settings showing the signed aggregate error of the
+  AI's frozen estimates vs the confirmed values (kcal/protein/carbs/fat, as a
+  % of the confirmed total, with the meal count) — the in-app view of the
+  Full export's `est_*` columns and the D-04 evidence for any Opus
+  escalation. Pure computation in `EstimationBias`; measurement only, no
+  history, no charts, no goal semantics.
+
+- **Quick-log favourites: widget + App Intent** (added 2026-08-21, reworked
+  2026-08-22): a "Quick Log" Home Screen widget (small/medium) showing **one
+  favourite per instance**, chosen in the widget's edit sheet
+  (`SelectFavoriteIntent`, a `WidgetConfigurationIntent`; unconfigured or
+  deleted picks fall back to the first favourite), and a Siri/Shortcuts
+  intent ("Log a favourite"). Both deep-link into the app and open review
+  pre-filled with the favourite's current values — review-before-write
+  (REV-01) is untouched; nothing can write Health data from outside the app.
+  The widget and both intents' pickers read a lightweight App-Group snapshot
+  (`FavoritesSnapshotStore`: id, name, macros — display-only) republished on
+  launch and after any favourites change; macros are resolved from SwiftData
+  at log time so an edited favourite is never logged stale. Deepens the
+  phase-04 friction goal on the highest-frequency logging path. Same day, a
+  layout pass sized all widget families to fill their available space (the
+  Today ring scales to the family instead of a fixed 84 pt).

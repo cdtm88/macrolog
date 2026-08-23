@@ -72,7 +72,11 @@ struct TextEntrySheet: View {
         // Focus immediately so the keyboard rises with the sheet as one motion
         // rather than a second step after the content lands.
         .onAppear { focused = true }
-        .sheet(isPresented: $isManagingFavorites) {
+        .sheet(isPresented: $isManagingFavorites, onDismiss: {
+            // Edits in the sheet write straight to SwiftData; republish the
+            // App-Group snapshot so the quick-log widget and Siri picker match.
+            model.publishFavoritesSnapshot()
+        }) {
             FavoritesView()
         }
     }

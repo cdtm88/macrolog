@@ -42,7 +42,7 @@ struct WeightLedgerTests {
         let only = UUID()
         _ = ledger.apply(added: [(only, moment(day: 2, hour: 8), 81.9)], deleted: [])
         _ = ledger.apply(added: [], deleted: [only])
-        // Propagates upstream as a cleared value (HB-02).
+        // No sample remains, so the bridge writes nothing for the day (HB-02).
         #expect(ledger.value(forDay: "2026-08-02") == nil)
     }
 
@@ -55,7 +55,7 @@ struct WeightLedgerTests {
     @Test func pendingMergeKeepsOneWritePerDateInPlace() {
         var queue = [WeightUpload(date: "2026-08-01", weightKg: 82.1),
                      WeightUpload(date: "2026-08-02", weightKg: 82.0)]
-        queue = WeightUpload.merge(queue, with: WeightUpload(date: "2026-08-01", weightKg: 81.8))
+        queue = queue.merging(WeightUpload(date: "2026-08-01", weightKg: 81.8))
 
         #expect(queue.count == 2)
         // Oldest-first drain order preserved; the value is the newest state.
@@ -64,7 +64,7 @@ struct WeightLedgerTests {
 
     @Test func boundEvictsOldestAndReportsThem() {
         let queue = (1...5).map { WeightUpload(date: "2026-08-0\($0)", weightKg: 80 + Double($0)) }
-        let (kept, evicted) = WeightUpload.bounded(queue, limit: 3)
+        let (kept, evicted) = queue.bounded(limit: 3)
 
         #expect(kept.map(\.date) == ["2026-08-03", "2026-08-04", "2026-08-05"])
         #expect(evicted.map(\.date) == ["2026-08-01", "2026-08-02"])

@@ -33,6 +33,10 @@ struct RootView: View {
             if url == SharedConstants.captureURL {
                 model.isShowingList = false
                 model.isShowingText = false
+            } else if let favoriteID = SharedConstants.favoriteID(from: url) {
+                // Favourites-widget row: straight to review with the preset
+                // filled — review-before-write applies as always.
+                model.logFavorite(id: favoriteID)
             }
         }
     }

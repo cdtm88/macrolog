@@ -105,8 +105,22 @@ Verify both endpoint shapes against the live services before building.
 works exactly as above. Clearing does not: `{"weight": null}` returns 200 but
 silently leaves the stored value unchanged, `{"weight": 0}` is rejected with
 422, and `DELETE` on the wellness date returns 405. `{"weight": -1}` returns
-200 and clears the field — the implementation sends `-1` for a cleared day.
-The coach endpoint shape remains unverified (no live endpoint yet).
+200 and clears the field. Neither bridge clears any more, though (updated
+2026-08-23): each writes only for a day that actually has data — a Health
+bodyMass sample for weight, confirmed entries for nutrition. A day without
+data writes nothing (and drops any queued write for it), so `-1` is never
+sent. The coach endpoint shape remains unverified (no live endpoint yet).
+
+**Post-spec addition, verified against the live intervals.icu API
+(2026-08-21):** the wellness record also carries native `kcalConsumed`,
+`protein`, `carbohydrates` and `fatTotal` fields (no fibre or sodium field).
+The same `PUT` sets them — it is a partial update, so a nutrition write never
+touches `weight` and vice versa — and `-1` clears a field, exactly the weight
+semantics (unused since 2026-08-23: a day with no confirmed entries writes
+nothing rather than clearing). `NutritionBridge` sends each day's confirmed
+totals on confirm/edit/delete, relaxing ARCH-04: macros now reach the coach
+per meal *and* intervals.icu as daily totals (recorded in
+`.planning/ROADMAP.md`).
 
 ## 6. Configuration
 

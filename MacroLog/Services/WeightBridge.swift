@@ -13,11 +13,6 @@ struct WeightLedger: Codable, Equatable {
 
     var samples: [UUID: Sample] = [:]
 
-    static func dayKey(for date: Date, calendar: Calendar = .current) -> String {
-        let parts = calendar.dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
-    }
-
     /// Applies one anchored-query delta and returns the day keys whose value
     /// may have changed, oldest first.
     mutating func apply(added: [(uuid: UUID, takenAt: Date, weightKg: Double)],
@@ -25,7 +20,7 @@ struct WeightLedger: Codable, Equatable {
                         calendar: Calendar = .current) -> [String] {
         var changed = Set<String>()
         for sample in added {
-            let day = Self.dayKey(for: sample.takenAt, calendar: calendar)
+            let day = BridgeDay.key(for: sample.takenAt, calendar: calendar)
             samples[sample.uuid] = Sample(day: day, takenAt: sample.takenAt, weightKg: sample.weightKg)
             changed.insert(day)
         }
@@ -38,8 +33,8 @@ struct WeightLedger: Codable, Equatable {
     }
 
     /// One value per day: the earliest reading of that day (HB-03), or nil
-    /// when every sample for the day has been deleted — which propagates as a
-    /// cleared value upstream (HB-02).
+    /// when every sample for the day has been deleted — in which case the
+    /// bridge writes nothing for that day (HB-02).
     func value(forDay day: String) -> Double? {
         samples.values
             .filter { $0.day == day }
@@ -57,32 +52,13 @@ struct WeightLedger: Codable, Equatable {
     }
 }
 
-/// One pending intervals.icu write: a day and its weight, nil meaning "clear".
-struct WeightUpload: Codable, Equatable {
+/// One pending intervals.icu write: a day and the weight Health holds for it.
+/// A day with no sample is never queued — the bridge writes nothing for it —
+/// so this is always a concrete value. Collapse and bounding come from
+/// `DateKeyedUpload` (HB-10).
+struct WeightUpload: Codable, Equatable, DateKeyedUpload {
     var date: String
-    var weightKg: Double?
-}
-
-extension WeightUpload {
-    /// Queue collapse and bounding (HB-10): one pending write per date (newest
-    /// state wins, original queue position kept so drain stays oldest-first),
-    /// and a hard cap whose overflow is returned for logging, never dropped
-    /// silently.
-    static func merge(_ queue: [WeightUpload], with upload: WeightUpload) -> [WeightUpload] {
-        var merged = queue
-        if let index = merged.firstIndex(where: { $0.date == upload.date }) {
-            merged[index] = upload
-        } else {
-            merged.append(upload)
-        }
-        return merged
-    }
-
-    static func bounded(_ queue: [WeightUpload], limit: Int) -> (kept: [WeightUpload], evicted: [WeightUpload]) {
-        guard queue.count > limit else { return (queue, []) }
-        let overflow = queue.count - limit
-        return (Array(queue.dropFirst(overflow)), Array(queue.prefix(overflow)))
-    }
+    var weightKg: Double
 }
 
 /// One-way bodyMass sync: Apple Health → intervals.icu wellness (bridge spec
@@ -96,17 +72,7 @@ extension WeightUpload {
 /// failed writes queue on disk to drain next foreground (HB-05). No weight
 /// value ever appears in the UI (HB-12).
 actor WeightBridge {
-    struct Config {
-        let athleteID: String
-        let apiKey: String
-    }
-
-    static func loadConfig() -> Config? {
-        guard let id = Secrets.intervalsAthleteID, let key = Secrets.intervalsAPIKey else {
-            return nil
-        }
-        return Config(athleteID: id, apiKey: key)
-    }
+    typealias Config = IntervalsConfig
 
     /// Everything persisted between launches, one JSON file.
     private struct State: Codable {
@@ -135,7 +101,7 @@ actor WeightBridge {
     private var loaded = false
     private var syncing = false
 
-    init(config: Config? = WeightBridge.loadConfig(),
+    init(config: Config? = IntervalsConfig.load(),
          session: URLSession = .shared,
          stateFile: URL = BridgeFiles.url("weight-state.json"),
          evictionLog: URL = BridgeFiles.url("weight-evictions.log")) {
@@ -188,8 +154,14 @@ actor WeightBridge {
 
             let changedDays = state.ledger.apply(added: added, deleted: deleted)
             for day in changedDays {
-                let upload = WeightUpload(date: day, weightKg: state.ledger.value(forDay: day))
-                state.pending = WeightUpload.merge(state.pending, with: upload)
+                if let weight = state.ledger.value(forDay: day) {
+                    state.pending = state.pending.merging(WeightUpload(date: day, weightKg: weight))
+                } else {
+                    // No sample dated that day: write nothing (HB-02), and drop
+                    // any write already queued for it — a reading that was added
+                    // then deleted before the queue drained.
+                    state.pending.removeAll { $0.date == day }
+                }
             }
             state.ledger.prune(olderThan: Date(timeIntervalSinceNow:
                 -Double(Self.ledgerRetentionDays) * 24 * 3600))
@@ -263,7 +235,7 @@ actor WeightBridge {
                 // value) — replay can never succeed, and leaving it at the
                 // head would block every later weight forever. Log, drop,
                 // keep draining. Still silent (HB-11).
-                BridgeFiles.appendLog(["\(upload.date) \(upload.weightKg.map { String($0) } ?? "clear") dropped HTTP \(status)"],
+                BridgeFiles.appendLog(["\(upload.date) \(upload.weightKg) dropped HTTP \(status)"],
                                       to: evictionLog)
                 state.pending.removeFirst()
                 persist()
@@ -275,41 +247,22 @@ actor WeightBridge {
         }
     }
 
-    /// `PUT /api/v1/athlete/{id}/wellness/{date}` with `weight` in kg, basic
-    /// auth with the literal username `API_KEY` (HB-04). Idempotent per date.
-    ///
-    /// Clearing (every sample of a day deleted, HB-02) sends `-1`: verified
-    /// against the live API on 2026-08-02 — `null` returns 200 but silently
-    /// leaves the stored value unchanged, `0` is rejected with 422, and `-1`
-    /// returns 200 and clears the field.
+    /// Only days Health actually holds a sample for are ever queued (HB-02), so
+    /// every write carries a real weight — the bridge never clears a day upstream.
     private func put(_ upload: WeightUpload, config: Config) async throws {
-        let url = URL(string: "https://intervals.icu/api/v1")!
-            .appending(path: "athlete/\(config.athleteID)/wellness/\(upload.date)")
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.timeoutInterval = 30
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let credentials = Data("API_KEY:\(config.apiKey)".utf8).base64EncodedString()
-        request.setValue("Basic \(credentials)", forHTTPHeaderField: "Authorization")
-        let body: [String: Any] = ["weight": upload.weightKg ?? -1]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-        let (_, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-        guard (200...299).contains(http.statusCode) else {
-            throw BridgeSendError.classify(status: http.statusCode)
-        }
+        try await IntervalsAPI.putWellness(["weight": upload.weightKg],
+                                           date: upload.date,
+                                           config: config,
+                                           session: session)
     }
 
     // MARK: - Queue bound (HB-10)
 
     private func enforceQueueBound() {
-        let (kept, evicted) = WeightUpload.bounded(state.pending, limit: Self.queueLimit)
+        let (kept, evicted) = state.pending.bounded(limit: Self.queueLimit)
         guard !evicted.isEmpty else { return }
         state.pending = kept
-        BridgeFiles.appendLog(evicted.map { "\($0.date) \($0.weightKg.map { String($0) } ?? "clear") evicted (queue bound)" },
+        BridgeFiles.appendLog(evicted.map { "\($0.date) \($0.weightKg) evicted (queue bound)" },
                               to: evictionLog)
     }
 

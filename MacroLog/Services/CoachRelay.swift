@@ -230,45 +230,5 @@ actor CoachRelay {
     }
 }
 
-/// Send-failure classification shared by both bridge queues. Transport errors
-/// and server-side conditions (5xx, 408, 429) are worth replaying; any other
-/// non-2xx is a permanent rejection (rotated secret, wrong athlete ID, bad
-/// payload) that can never succeed and must not wedge the queue behind it.
-enum BridgeSendError: Error, Equatable {
-    case permanent(status: Int)
-    case retryable(status: Int)
-
-    static func classify(status: Int) -> BridgeSendError {
-        switch status {
-        case 500...599, 408, 429: return .retryable(status: status)
-        default: return .permanent(status: status)
-        }
-    }
-}
-
-/// Locations for the bridge queues: plain JSON files in Application Support,
-/// deliberately outside the SwiftData store so the bridges add nothing to the
-/// existing persistence model (ARCH-01/05).
-enum BridgeFiles {
-    static func url(_ name: String) -> URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory,
-                                            in: .userDomainMask)[0]
-            .appending(path: "Bridge", directoryHint: .isDirectory)
-        try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
-        return base.appending(path: name)
-    }
-
-    /// Appends lines to a local log file — the shared "never drop silently"
-    /// mechanism behind HB-10 evictions and permanently rejected items.
-    static func appendLog(_ lines: [String], to url: URL) {
-        guard !lines.isEmpty else { return }
-        let data = Data((lines.joined(separator: "\n") + "\n").utf8)
-        if let handle = try? FileHandle(forWritingTo: url) {
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: data)
-        } else {
-            try? data.write(to: url)
-        }
-    }
-}
+// BridgeSendError and BridgeFiles, shared by every bridge queue, live in
+// BridgeSupport.swift.

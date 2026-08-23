@@ -77,6 +77,7 @@ final class CaptureViewModel {
     // config keys; neither is ever awaited on the logging path (ARCH-02).
     private let coachRelay = CoachRelay()
     private let weightBridge = WeightBridge()
+    private let nutritionBridge = NutritionBridge()
 
     /// Executes the reminder plan. Inert until reminders are enabled in
     /// settings; its permission prompt fires only from the settings toggle.
@@ -108,7 +109,9 @@ final class CaptureViewModel {
         runDayMaintenance()
         recoverPendingEntry()
         kickBridges()
+        backfillNutritionHistory()
         rearmReminders()
+        publishFavoritesSnapshot()
     }
 
     /// Called whenever the app returns to the foreground. iOS keeps the app
@@ -137,6 +140,7 @@ final class CaptureViewModel {
     /// (HB-08).
     private func kickBridges() {
         Task { [coachRelay] in await coachRelay.kick() }
+        Task { [nutritionBridge] in await nutritionBridge.kick() }
         let hasConfirmedMeal = !store.todaysConfirmedEntries().isEmpty
         Task { [weightBridge] in
             await weightBridge.syncOnForeground(hasConfirmedMeal: hasConfirmedMeal) { [weak self] notice in
@@ -328,16 +332,17 @@ final class CaptureViewModel {
     private var deferredReview: (entry: FoodEntry, editingExisting: Bool)?
 
     func openReview(for entry: FoodEntry, editingExisting: Bool) {
-        // The review cover, the list sheet, and the text sheet all present from
-        // the same view, and UIKit allows only one presentation at a time —
-        // showing review while a sheet is up (list edit, or an estimate landing
-        // with a sheet open) intermittently breaks the cover's layout. Dismiss
-        // any open sheet first; the sheet's onDismiss presents the review once
-        // the dismissal has actually completed.
-        if isShowingList || isShowingText {
+        // The review cover and the sheets (list, text, settings) all present
+        // from the same view, and UIKit allows only one presentation at a
+        // time — showing review while a sheet is up (list edit, an estimate
+        // landing with a sheet open, or a widget quick-log) intermittently
+        // breaks the cover's layout. Dismiss any open sheet first; the sheet's
+        // onDismiss presents the review once the dismissal has completed.
+        if isShowingList || isShowingText || isShowingSettings {
             deferredReview = (entry, editingExisting)
             isShowingList = false
             isShowingText = false
+            isShowingSettings = false
         } else {
             presentReview(for: entry, editingExisting: editingExisting)
         }
@@ -423,8 +428,7 @@ final class CaptureViewModel {
             lastText = nil // the retained description can't outlive its entry
             showToast(entry.macroSummary)
             closeReviewToCapture()
-            store.refreshTodaySnapshot()
-            rearmReminders()
+            entryDidChange(onDay: entry.capturedAt)
         } catch {
             // Never silently mark as logged (HK-06). Escalate after two
             // consecutive failures (HK-08).
@@ -436,10 +440,9 @@ final class CaptureViewModel {
             }
             healthError = (error as? HealthKitError) ?? .writeFailed(error.localizedDescription)
             closeReviewToCapture()
-            store.refreshTodaySnapshot()
-            // An .unwritten entry still counts toward today — suppression and
-            // shortfall copy must reflect it.
-            rearmReminders()
+            // An .unwritten entry still counts toward the day — suppression,
+            // shortfall copy, and the intervals totals must reflect it.
+            entryDidChange(onDay: entry.capturedAt)
         }
     }
 
@@ -456,8 +459,7 @@ final class CaptureViewModel {
                 entry.capturedAt = baseline.capturedAt
                 try? context.save()
                 // Totals shown on capture/list/widget included the edits.
-                store.refreshTodaySnapshot()
-                rearmReminders()
+                entryDidChange(onDay: entry.capturedAt)
             }
         } else {
             context.delete(entry)
@@ -510,8 +512,7 @@ final class CaptureViewModel {
                 pendingEntry = nil
                 captureState = .idle
             }
-            store.refreshTodaySnapshot()
-            rearmReminders()
+            entryDidChange(onDay: relayed.at)
         }
     }
 
@@ -543,7 +544,38 @@ final class CaptureViewModel {
         let nextOrder = (favorites.map(\.sortOrder).max() ?? -1) + 1
         context.insert(Favorite(name: name, macros: entry.macros, sortOrder: nextOrder))
         try? context.save()
+        publishFavoritesSnapshot()
         return .saved
+    }
+
+    // MARK: - Quick-log favourites (widget + App Intent)
+
+    /// Publishes the favourites (id, name, kcal) to the App Group for the
+    /// quick-log widget and the Siri intent's picker. Called on launch and
+    /// after any favourites mutation.
+    func publishFavoritesSnapshot() {
+        let favorites = (try? context.fetch(
+            FetchDescriptor<Favorite>(sortBy: [SortDescriptor(\.sortOrder)]))) ?? []
+        FavoritesSnapshotStore.write(favorites.map {
+            FavoriteSnapshotItem(id: $0.id, name: $0.name, macros: $0.macros)
+        })
+        WidgetCenter.shared.reloadTimelines(ofKind: SharedConstants.favoritesWidgetKind)
+    }
+
+    /// Quick-log entry point for the favourites widget deep link and the Siri
+    /// App Intent: opens review pre-filled with the favourite's values.
+    /// Review-before-write (REV-01) applies exactly as it does to an in-app
+    /// tap — nothing is logged until the user confirms. Returns false when the
+    /// favourite no longer exists (stale widget or Shortcut).
+    @discardableResult
+    func logFavorite(id: UUID) -> Bool {
+        let favorites = (try? context.fetch(FetchDescriptor<Favorite>())) ?? []
+        guard let favorite = favorites.first(where: { $0.id == id }) else {
+            publishFavoritesSnapshot() // refresh whatever showed the stale entry
+            return false
+        }
+        submitFavorite(name: favorite.name, macros: favorite.macros)
+        return true
     }
 
     // MARK: - Derived data for views
@@ -574,6 +606,16 @@ final class CaptureViewModel {
         }
     }
 
+    /// AI-estimate vs confirmed bias across every instrumented meal — the
+    /// D-04 evidence base, computed on demand for the settings sheet. Nil
+    /// until at least one AI-estimated meal has been confirmed.
+    func estimationBias() -> EstimationBias? {
+        EstimationBias.compute(items: store.allConfirmedEntries().map {
+            MealExportItem(capturedAt: $0.capturedAt, name: $0.name,
+                           macros: $0.macros, estimated: $0.estimatedMacros)
+        })
+    }
+
     func todaysEntries() -> [FoodEntry] { store.todaysConfirmedEntries() }
 
     /// Earliest day reachable in the day-paged list.
@@ -596,6 +638,52 @@ final class CaptureViewModel {
         toastTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(2.6))
             self?.toast = nil
+        }
+    }
+
+    // MARK: - Post-mutation funnel
+
+    /// The single funnel for "a confirmed entry changed": republishes the
+    /// widget snapshot, re-syncs the mutated day to the nutrition bridge, and
+    /// re-arms reminders. Every mutation path must land here so the three
+    /// surfaces can never drift apart by one forgotten call.
+    private func entryDidChange(onDay date: Date) {
+        store.refreshTodaySnapshot()
+        syncNutritionDay(containing: date)
+        rearmReminders()
+    }
+
+    // MARK: - Nutrition bridge
+
+    /// One-shot history push on launch: the first time the configured bridge
+    /// asks for it, every already-logged day's totals are enqueued (oldest
+    /// first) so intervals.icu starts with the full record, not just days
+    /// logged from now on. The bridge's persisted flag makes every later
+    /// launch a cheap no-op — the store isn't even queried.
+    private func backfillNutritionHistory() {
+        Task { [nutritionBridge] in
+            guard await nutritionBridge.needsBackfill() else { return }
+            let days = store.allConfirmedDailyTotals().map {
+                NutritionUpload(date: BridgeDay.key(for: $0.dayStart, calendar: store.calendar),
+                                totals: $0.totals)
+            }
+            await nutritionBridge.backfill(days)
+        }
+    }
+
+    /// Recomputes the confirmed totals of the day the mutated entry was
+    /// captured on and hands them to the nutrition bridge — fire and forget,
+    /// never awaited on the logging path (ARCH-02). A day left with no
+    /// confirmed entries sends nil, which writes nothing upstream and drops
+    /// any queued write for the day.
+    /// The day key is computed with the store's calendar — the same one that
+    /// answers the totals query — so a mid-session timezone change can't file
+    /// one day's totals under another's date.
+    private func syncNutritionDay(containing date: Date) {
+        let day = BridgeDay.key(for: date, calendar: store.calendar)
+        let totals = store.confirmedDayTotals(for: date)
+        Task { [nutritionBridge] in
+            await nutritionBridge.recordDay(date: day, totals: totals)
         }
     }
 

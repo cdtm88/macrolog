@@ -4,8 +4,9 @@ import SwiftUI
 // Widget brand hues (kept local — the widget target doesn't link the app's
 // Theme). Only the three macro colours are fixed; every neutral is semantic so
 // the widget follows the Home Screen appearance — the app's forced-light
-// UIUserInterfaceStyle does not apply to an extension.
-private enum W {
+// UIUserInterfaceStyle does not apply to an extension. Shared with
+// FavoritesWidget, same target.
+enum W {
     static let protein = Color(red: 0.0, green: 0.478, blue: 1.0)
     static let carbs   = Color(red: 1.0, green: 0.584, blue: 0.0)
     static let fat     = Color(red: 0.686, green: 0.322, blue: 0.871)
@@ -79,40 +80,50 @@ struct TodayWidgetView: View {
     }
 
     // The calorie readout lives inside the ring only — no duplicate label.
+    // The ring fills whatever the family gives it (the container's default
+    // content margins are the only inset).
     private var small: some View {
-        WidgetRing(macros: totals, size: 84, lineWidth: 11, kcalTarget: entry.kcalTarget)
-            .padding(12)
+        GeometryReader { geo in
+            let side = min(geo.size.width, geo.size.height)
+            WidgetRing(macros: totals, size: side, lineWidth: side * 0.13,
+                       kcalTarget: entry.kcalTarget)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     private var medium: some View {
-        HStack(spacing: 18) {
-            WidgetRing(macros: totals, size: 84, lineWidth: 11, kcalTarget: entry.kcalTarget)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("TODAY")
-                    .font(.system(size: 10, weight: .bold)).tracking(0.6)
-                    .foregroundStyle(.secondary)
-                macroLine("Protein", totals.protein, W.protein, target: entry.proteinTarget)
-                macroLine("Carbs", totals.carbs, W.carbs)
-                macroLine("Fat", totals.fat, W.fat)
+        GeometryReader { geo in
+            HStack(spacing: 18) {
+                WidgetRing(macros: totals, size: geo.size.height,
+                           lineWidth: geo.size.height * 0.13,
+                           kcalTarget: entry.kcalTarget)
+                VStack(alignment: .leading, spacing: 9) {
+                    Text("TODAY")
+                        .font(.system(size: 10, weight: .bold)).tracking(0.6)
+                        .foregroundStyle(.secondary)
+                    macroLine("Protein", totals.protein, W.protein, target: entry.proteinTarget)
+                    macroLine("Carbs", totals.carbs, W.carbs)
+                    macroLine("Fat", totals.fat, W.fat)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(16)
     }
 
     private func macroLine(_ label: String, _ value: Double, _ color: Color,
                            target: Double? = nil) -> some View {
-        HStack(spacing: 6) {
-            RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 7, height: 7)
-            Text(label).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+        HStack(spacing: 7) {
+            RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 8, height: 8)
+            Text(label).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
             Spacer()
             if let target {
                 Text("\(Int(value.rounded()))/\(Int(target))g")
-                    .font(.system(size: 11, weight: .bold)).foregroundStyle(.primary)
+                    .font(.system(size: 13, weight: .bold)).foregroundStyle(.primary)
                     .lineLimit(1).minimumScaleFactor(0.7)
             } else {
                 Text("\(Int(value.rounded()))g")
-                    .font(.system(size: 11, weight: .bold)).foregroundStyle(.primary)
+                    .font(.system(size: 13, weight: .bold)).foregroundStyle(.primary)
                     .lineLimit(1).minimumScaleFactor(0.7)
             }
         }

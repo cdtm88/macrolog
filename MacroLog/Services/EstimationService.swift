@@ -80,14 +80,17 @@ struct EstimationService {
             ?? fallbackName
             ?? "Meal"
 
+        // Clamped at zero: the response schema's `number` permits negatives,
+        // and the review steppers only clamp on adjustment — this is the one
+        // gate between a nonsense model value and an unedited confirm.
         return MacroEstimate(
             name: resolvedName,
-            macros: Macros(kcal: kcal.rounded(),
-                           protein: protein.rounded(),
-                           carbs: carbs.rounded(),
-                           fat: fat.rounded(),
-                           fiber: fiber.rounded(),
-                           sodium: sodium.rounded())
+            macros: Macros(kcal: max(0, kcal.rounded()),
+                           protein: max(0, protein.rounded()),
+                           carbs: max(0, carbs.rounded()),
+                           fat: max(0, fat.rounded()),
+                           fiber: max(0, fiber.rounded()),
+                           sodium: max(0, sodium.rounded()))
         )
     }
 

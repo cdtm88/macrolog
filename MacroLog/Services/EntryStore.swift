@@ -37,6 +37,20 @@ struct EntryStore {
         return (try? context.fetch(descriptor)) ?? []
     }
 
+    /// Confirmed totals for the day containing `date`, or nil when that day
+    /// has no confirmed entries — the nutrition bridge writes nothing for nil.
+    func confirmedDayTotals(for date: Date) -> Macros? {
+        let dayStart = calendar.startOfDay(for: date)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return nil }
+        let pending = EntryStatus.pendingReview.rawValue
+        let descriptor = FetchDescriptor<FoodEntry>(
+            predicate: #Predicate { $0.statusRaw != pending && $0.capturedAt >= dayStart && $0.capturedAt < dayEnd }
+        )
+        let entries = (try? context.fetch(descriptor)) ?? []
+        guard !entries.isEmpty else { return nil }
+        return entries.reduce(Macros.zero) { $0 + $1.macros }
+    }
+
     // MARK: - History bounds
 
     /// Start of the earliest day holding a confirmed entry — the back limit for

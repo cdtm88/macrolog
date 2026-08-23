@@ -70,6 +70,17 @@ struct EstimationDecodeTests {
         #expect(estimate.name == "leftover pasta")
     }
 
+    @Test func negativeValuesClampToZero() throws {
+        // The response schema's `number` permits negatives; decode is the one
+        // gate before review, so a nonsense value must clamp, not flow through.
+        let raw = #"{"identified": true, "name": "Weird", "kcal": 300, "protein": -12, "carbs": 30, "fat": -0.4, "fiber": 2, "sodium": -50}"#
+        let estimate = try EstimationService.decode(raw, fallbackName: nil)
+        #expect(estimate.macros.protein == 0)
+        #expect(estimate.macros.fat == 0)
+        #expect(estimate.macros.sodium == 0)
+        #expect(estimate.macros.kcal == 300)
+    }
+
     @Test func blankNameWithoutFallbackUsesPlaceholder() throws {
         let raw = #"{"identified": true, "name": "  ", "kcal": 500, "protein": 30, "carbs": 40, "fat": 20, "fiber": 5, "sodium": 700}"#
         let estimate = try EstimationService.decode(raw, fallbackName: nil)

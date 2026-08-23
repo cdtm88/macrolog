@@ -5,5 +5,6 @@ import SwiftUI
 struct MacroLogWidgetBundle: WidgetBundle {
     var body: some Widget {
         TodayWidget()
+        FavoritesWidget()
     }
 }

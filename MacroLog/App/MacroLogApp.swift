@@ -41,10 +41,13 @@ struct MacroLogApp: App {
     /// reset path instead of a crash loop — "fail loudly" applies to launch
     /// too. Everything confirmed already lives in Apple Health; only today's
     /// local list is at stake.
+    @MainActor
     private static func boot() -> Bootstrap {
         do {
             let container = try StoreBootstrap.makeContainer()
-            return .ready(container, CaptureViewModel(context: container.mainContext))
+            let model = CaptureViewModel(context: container.mainContext)
+            ActiveModel.shared = model // App Intents route through here
+            return .ready(container, model)
         } catch {
             return .failed(error.localizedDescription)
         }

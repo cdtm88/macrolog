@@ -22,6 +22,7 @@ struct SettingsView: View {
     @State private var isTogglingProteinReminder = false
     @State private var exportFull = SettingsStore.exportFull()
     @State private var exportURL: URL?
+    @State private var bias: EstimationBias?
 
     var body: some View {
         NavigationStack {
@@ -29,6 +30,7 @@ struct SettingsView: View {
                 targetSection
                 notificationsSection
                 dataSection
+                accuracySection
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -42,6 +44,7 @@ struct SettingsView: View {
                 // Eagerly built: the store is tiny and nothing can add entries
                 // while this modal is up.
                 exportURL = model.exportURL()
+                bias = model.estimationBias()
             }
         }
     }
@@ -195,6 +198,45 @@ struct SettingsView: View {
             Text(exportFull
                  ? "A CSV of every logged meal — date, time, name, and macros."
                  : "A CSV of every logged day's totals.")
+        }
+    }
+
+    // MARK: - Estimation accuracy
+
+    /// How the AI's frozen original estimates compare with the confirmed
+    /// values — the in-app view of the export's `est_*` columns (the D-04
+    /// evidence for any Opus escalation). Read-only; measurement, not a goal.
+    private var accuracySection: some View {
+        Section {
+            if let bias {
+                biasRow("Calories", bias.kcal)
+                biasRow("Protein", bias.protein)
+                biasRow("Carbs", bias.carbs)
+                biasRow("Fat", bias.fat)
+            } else {
+                Text("No AI-estimated meals yet.")
+                    .font(.system(.footnote))
+                    .foregroundStyle(Theme.secondary)
+            }
+        } header: {
+            Text("Estimation accuracy")
+        } footer: {
+            if let bias {
+                Text("AI estimates vs your confirmed values across \(bias.mealCount) meals. Positive means the AI over-estimates.")
+            }
+        }
+    }
+
+    private func biasRow(_ label: String, _ fraction: Double?) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(.body))
+                .foregroundStyle(Theme.ink)
+            Spacer()
+            Text(fraction.map { String(format: "%+.0f%%", $0 * 100) } ?? "—")
+                .font(.system(.body, weight: .bold))
+                .foregroundStyle(Theme.ink)
+                .monospacedDigit()
         }
     }
 
